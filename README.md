@@ -1,15 +1,9 @@
-# annuums
+# Solanum - Web Server Framework Based on Gin
 
-- 본 Repository는 annuums에서 제작한 Become a DevOps/SRE Engineer 프로젝트 중 [Golang - 웹 서버 정보하기] 코드 저장소 입니다.
+- This project provides Modulability to Gin Project.
+- You can implement `Module`, `Controller`, `service` to routes, handles, and intercept requests.
 
-## Golang - 웹 서버 정복하기 Repository
-
-### 학습 목표
-
-- 본 프로젝트를 통해 Golang을 더 잘 이해할 수 있다.
-- 본 프로젝트를 통해 Golang을 이용하여 웹 서버를 구현할 수 있다.
-
-#### Written by
+## Annuum, Potato Also Can Change The World!
 
 - dev.whoan(싹난 감자) in Annuums
   - [Github](https://github.com/dev-whoan)
