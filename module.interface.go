@@ -38,10 +38,10 @@ type (
 	}
 
 	Service struct {
-		uri        string
-		method     string
-		handler    gin.HandlerFunc
-		middleware gin.HandlerFunc
+		Uri        string
+		Method     string
+		Handler    gin.HandlerFunc
+		Middleware gin.HandlerFunc
 	}
 )
 
