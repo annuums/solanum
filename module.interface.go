@@ -78,21 +78,21 @@ func (m *module) SetRoutes() {
 	for _, c := range m.controllers {
 		services := c.GetHandlers()
 		for _, svc := range services {
-			switch svc.method {
+			switch svc.Method {
 			case http.MethodGet:
-				m.router.GET(svc.uri, svc.handler)
+				m.router.GET(svc.Uri, svc.Handler)
 			case http.MethodPost:
-				m.router.POST(svc.uri, svc.handler)
+				m.router.POST(svc.Uri, svc.Handler)
 			case http.MethodPut:
-				m.router.PUT(svc.uri, svc.handler)
+				m.router.PUT(svc.Uri, svc.Handler)
 			case http.MethodPatch:
-				m.router.PATCH(svc.uri, svc.handler)
+				m.router.PATCH(svc.Uri, svc.Handler)
 			case http.MethodDelete:
-				m.router.DELETE(svc.uri, svc.handler)
+				m.router.DELETE(svc.Uri, svc.Handler)
 			case http.MethodHead:
-				m.router.HEAD(svc.uri, svc.handler)
+				m.router.HEAD(svc.Uri, svc.Handler)
 			case http.MethodOptions:
-				m.router.OPTIONS(svc.uri, svc.handler)
+				m.router.OPTIONS(svc.Uri, svc.Handler)
 			default:
 				log.Fatalf("Unknown method registered: %v", svc)
 			}

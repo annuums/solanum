@@ -9,14 +9,16 @@ import (
 type (
 	Runner interface {
 		InitModules()
-		GetModules() *[]Module
 		InitGlobalMiddlewares()
+		AddModule(m ...*Module)
+		GetModules() []*Module
+
 		Run()
 	}
 	runner struct {
 		Engine  *gin.Engine
 		port    int
-		modules *[]Module
+		modules []*Module
 	}
 )
 
@@ -50,35 +52,23 @@ func (server *runner) appendHelloWorld() *Module {
 }
 
 func (server *runner) InitModules() {
-	//* initialize Modules
-	//* Modules are Singleton Designed
-	// myModules := make([]Module, 0)
-
-	helloUri := "/"
-	helloWorldModule, _ := NewHelloWorldModule(
-		server.Engine.Group(helloUri),
-		helloUri,
-	)
-
-	myModules := []Module{
-		helloWorldModule,
-	}
-
-	//* If you don't have any modules, then helloWorld will be added as a default module.
-	if length := len(myModules); length == 0 {
-		fmt.Println(`Appending HelloWorld... for "/"`)
-		myModules = append(myModules, *server.appendHelloWorld())
-	}
-
-	server.modules = &myModules
-
 	//* setRoutes
-	for _, m := range myModules {
-		m.SetRoutes()
+	fmt.Println("Initialize Modules...")
+	for _, m := range server.modules {
+		var _m Module = *m
+		_m.SetRoutes()
 	}
 }
 
-func (server *runner) GetModules() *[]Module {
+func (server *runner) AddModule(m ...*Module) {
+	if server.modules == nil {
+		server.modules = make([]*Module, 0)
+	}
+
+	server.modules = append(server.modules, m...)
+}
+
+func (server *runner) GetModules() []*Module {
 	return server.modules
 }
 
@@ -99,6 +89,14 @@ func NewSolanum(port int) *Runner {
 	}
 
 	SolanumRunner.InitGlobalMiddlewares()
+
+	helloUri := "/"
+	helloWorldModule, _ := NewHelloWorldModule(
+		SolanumRunner.(*runner).Engine.Group(helloUri),
+		helloUri,
+	)
+	SolanumRunner.AddModule(&helloWorldModule)
+
 	SolanumRunner.InitModules()
 
 	return &SolanumRunner

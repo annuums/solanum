@@ -9,10 +9,10 @@ import (
 
 func NewHelloWorldHandler() *Service {
 	return &Service{
-		uri:        "/",
-		method:     http.MethodGet,
-		handler:    indexHandler,
-		middleware: indexMiddleware,
+		Uri:        "/",
+		Method:     http.MethodGet,
+		Handler:    indexHandler,
+		Middleware: indexMiddleware,
 	}
 }
 
