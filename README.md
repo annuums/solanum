@@ -99,8 +99,8 @@ func NewHelloWorldController() (Controller, error) {
   - It means that if you want to routes `/` and `/healthz`, should implement two `*service` for each of those.
 
 ```go
-func NewHelloWorldHandler() *service {
-	return &service{
+func NewHelloWorldHandler() *Service {
+	return &Service{
 		uri:        "/",
 		method:     http.MethodGet,
 		handler:    indexHandler,

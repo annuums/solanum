@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewHelloWorldHandler() *service {
-	return &service{
+func NewHelloWorldHandler() *Service {
+	return &Service{
 		uri:        "/",
 		method:     http.MethodGet,
 		handler:    indexHandler,
