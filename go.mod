@@ -1,4 +1,4 @@
-module github.com/annuums/solanum
+module github.com/annuums/solanum v0.0.1
 
 go 1.20
  
