@@ -21,11 +21,7 @@ $ ./example
 
 ### Run Solanum
 
-- You should implement `Runner` interface, and `runner` struct in `solanum.go`.
-
-  - Must override methods: `InitModules(), InitGlobalMiddlewares()`
-
-- You should develop `Modules, Controllers, Handlers` which are written in `module.interface.go`
+- You should develop `Module, Controller, Handler` which are specified in `module.interface.go`
 
 #### Examples
 
@@ -118,39 +114,22 @@ func indexMiddleware(ctx *gin.Context) {
 }
 ```
 
-- Finally, you should integrate `Module, Controller, Handler`. It is done with overriding `func (server *server) InitModules()` which defined in `solanum.go`
+- Finally, you should composite `Module, Controller, Handler`. After you composited the modules, you can add it with calling `SolanumRunner.Addmodule(module_name)`.
 
   - If you explicitly declare the `Module, Controller, Handler`, then you should attach `Handler` to `Controller`, and `Controller` to `Module` using functions.
   - `helloWorldController.AddHandler(helloHandler)`, `helloWorldModule.SetControllers(ctr)`
 
 ```go
-func (server *runner) InitModules() {
-	//* Initialize Modules
-	//* Modules are Singleton Designed
-	// myModules := make([]Module, 0)
+func main() {
+  server := *solanum.NewSolanum(5050)
 
 	helloUri := "/"
 	helloWorldModule, _ := NewHelloWorldModule(
-		server.Engine.Group(helloUri),
+		server.GetGinEngine().Group(helloUri),
 		helloUri,
 	)
 
-	myModules := []Module{
-		helloWorldModule,
-	}
-
-	//* If you don't have any modules, then helloWorld will be added as a default module.
-	if length := len(myModules); length == 0 {
-		fmt.Println(`Appending HelloWorld... for "/"`)
-		myModules = append(myModules, *server.appendHelloWorld())
-	}
-
-	server.modules = &myModules
-
-	//* Setting Routes for Modules
-	for _, m := range myModules {
-		m.SetRoutes()
-	}
+	server.AddModule(&helloWorldModule)
 }
 ```
 

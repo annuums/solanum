@@ -9,15 +9,15 @@ func NewHelloWorldModule(router *gin.RouterGroup, uri string) (Module, error) {
 		helloWorldModule, _ = NewModule(router, uri)
 		attachControllers()
 	}
-	
+
 	return helloWorldModule, nil
 }
 
 func attachControllers() {
-//* Attatching Controller Directly
+	//* Attatching Controller Directly
 	ctr, _ := NewHelloWorldController()
-// ctr2, _ := NewAnotherController()
-//	...
-  
+	// ctr2, _ := NewAnotherController()
+	//	...
+
 	helloWorldModule.SetControllers(ctr)
 }

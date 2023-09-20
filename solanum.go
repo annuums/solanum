@@ -12,6 +12,7 @@ type (
 		InitGlobalMiddlewares()
 		AddModule(m ...*Module)
 		GetModules() []*Module
+		GetGinEngine() *gin.Engine
 
 		Run()
 	}
@@ -26,6 +27,8 @@ var SolanumRunner Runner
 
 func (server *runner) Run() {
 	addr := fmt.Sprintf(":%v", server.port)
+
+	SolanumRunner.InitModules()
 
 	fmt.Println("Solanum is running on ", addr)
 	server.Engine.Run(addr)
@@ -80,6 +83,10 @@ func (server *runner) InitGlobalMiddlewares() {
 	//* 3. Authorization, ...
 }
 
+func (server *runner) GetGinEngine() *gin.Engine {
+	return server.Engine
+}
+
 func NewSolanum(port int) *Runner {
 	if SolanumRunner == nil {
 		SolanumRunner = &runner{
@@ -90,22 +97,5 @@ func NewSolanum(port int) *Runner {
 
 	SolanumRunner.InitGlobalMiddlewares()
 
-	helloUri := "/"
-	helloWorldModule, _ := NewHelloWorldModule(
-		SolanumRunner.(*runner).Engine.Group(helloUri),
-		helloUri,
-	)
-	SolanumRunner.AddModule(&helloWorldModule)
-
-	SolanumRunner.InitModules()
-
 	return &SolanumRunner
-}
-
-func Run() {
-	if SolanumRunner == nil {
-		SolanumRunner = *NewSolanum(5050)
-	}
-
-	SolanumRunner.Run()
 }
