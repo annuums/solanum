@@ -1,23 +1,22 @@
-package main
+package solanum
 
 import (
 	"fmt"
 
-	solanum "github.com/annuums/solanum"
 	"github.com/gin-gonic/gin"
 )
 
 type (
 	Runner interface {
 		InitModules()
-		GetModules() *[]solanum.Module
+		GetModules() *[]Module
 		InitGlobalMiddlewares()
 		Run()
 	}
 	runner struct {
 		Engine  *gin.Engine
 		port    int
-		modules *[]solanum.Module
+		modules *[]Module
 	}
 )
 
@@ -30,43 +29,56 @@ func (server *runner) Run() {
 	server.Engine.Run(addr)
 }
 
-func (server *runner) appendHelloWorld() {
+func (server *runner) appendHelloWorld() *Module {
 	//* Init Vars
-	helloWorldController, err := solanum.NewController()
+	// helloWorldController, err := NewHelloWorldController()
 
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	helloUri := "/"
+	helloWorldModule, err := NewHelloWorldModule(
+		server.Engine.Group(helloUri),
+		helloUri,
+	)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	helloWorldModule, err := solanum.NewModule(server.Engine.Group("/"), "/")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	//* Set Handlers
-	helloHandler := solanum.NewHelloHandler()
-
-	helloWorldController.AddHandler(helloHandler)
-	helloWorldModule.SetControllers(helloWorldController)
-
-	//* Set Router
-	helloWorldModule.SetRoutes()
+	return &helloWorldModule
 }
 
 func (server *runner) InitModules() {
 	//* initialize Modules
 	//* Modules are Singleton Designed
-	// myModules := make([]solanum.Module, 0)
-	myModules := []solanum.Module{}
+	// myModules := make([]Module, 0)
 
+	helloUri := "/"
+	helloWorldModule, _ := NewHelloWorldModule(
+		server.Engine.Group(helloUri),
+		helloUri,
+	)
+
+	myModules := []Module{
+		helloWorldModule,
+	}
+
+	//* If you don't have any modules, then helloWorld will be added as a default module.
 	if length := len(myModules); length == 0 {
-		server.appendHelloWorld()
+		fmt.Println(`Appending HelloWorld... for "/"`)
+		myModules = append(myModules, *server.appendHelloWorld())
 	}
 
 	server.modules = &myModules
+
+	//* setRoutes
+	for _, m := range myModules {
+		m.SetRoutes()
+	}
 }
 
-func (server *runner) GetModules() *[]solanum.Module {
+func (server *runner) GetModules() *[]Module {
 	return server.modules
 }
 

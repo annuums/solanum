@@ -1,12 +1,13 @@
 package solanum
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func NewHelloHandler() *service {
+func NewHelloWorldHandler() *service {
 	return &service{
 		uri:        "/",
 		method:     http.MethodGet,
@@ -16,9 +17,10 @@ func NewHelloHandler() *service {
 }
 
 func indexHandler(ctx *gin.Context) {
-	ctx.JSON(200, "Hello, World! From HelloWorld Index Handler")
+	ctx.JSON(200, "Hello, World! From HelloWorld Index Handler.")
 }
 
 func indexMiddleware(ctx *gin.Context) {
-
+	log.Println("Hello Index Middleware")
+	ctx.Next()
 }

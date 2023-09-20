@@ -9,8 +9,8 @@ import (
 
 type (
 	Controller interface {
-		AddHandler(handler *service)
-		GetHandlers() []service
+		AddHandler(handler ...*service)
+		GetHandlers() []*service
 	}
 
 	Module interface {
@@ -34,7 +34,7 @@ type (
 	}
 
 	controller struct {
-		handlers []service
+		handlers []*service
 	}
 
 	service struct {
@@ -112,9 +112,14 @@ func NewController() (Controller, error) {
 	return ctr, nil
 }
 
-func (ctr *controller) AddHandler(svc *service) {
-	ctr.handlers = append(ctr.handlers, *svc)
+func (ctr *controller) AddHandler(svc ...*service) {
+	if ctr.handlers == nil {
+		ctr.handlers = make([]*service, 0)
+	}
+	
+	// ctr.handlers = append(ctr.handlers, *svc)
+	ctr.handlers = append(ctr.handlers, svc...)
 }
-func (ctr *controller) GetHandlers() []service {
+func (ctr *controller) GetHandlers() []*service {
 	return ctr.handlers
 }

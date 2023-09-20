@@ -1,7 +1,9 @@
 package main
 
+import "github.com/annuums/solanum"
+
 func main() {
-	server := *NewSolanum(5050)
+	server := *solanum.NewSolanum(5050)
 
 	// server.GET("/posts", func(ctx *gin.Context) {
 	// 	ctx.JSON(

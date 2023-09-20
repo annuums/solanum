@@ -1,9 +1,20 @@
 package solanum
 
-type helloWorldController struct {
-	controller
+var helloWorldController Controller
+
+func NewHelloWorldController() (Controller, error) {
+	if helloWorldController == nil {
+		helloWorldController, _ = NewController()
+		addHandlers()
+	}
+
+	return helloWorldController, nil
 }
 
-func NewHelloWorldController() *helloWorldController {
-	return &helloWorldController{}
+func addHandlers() {
+	helloHandler := NewHelloWorldHandler()
+// anotherHandler := NewHelloWorldHandler()
+//* ...
+
+	helloWorldController.AddHandler(helloHandler)
 }
