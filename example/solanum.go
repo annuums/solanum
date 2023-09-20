@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	solanum "github.com/dev-whoan/go-study-net-http"
+	solanum "github.com/annuums/solanum"
 	"github.com/gin-gonic/gin"
 )
 

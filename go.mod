@@ -1,4 +1,4 @@
-module github.com/dev-whoan/go-study-net-http
+module github.com/annuums/solanum
 
 go 1.20
 
