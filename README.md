@@ -8,41 +8,48 @@
 - dev.whoan(싹난 감자) in Annuums
   - [Github](https://github.com/dev-whoan)
 
-### Run Example Server
-
-```shell
-$ cd example
-$ go run .
-# OR
-$ cd example
-$ go build
-$ ./example
-```
-
 ### Run Solanum
 
-- You should develop `Module, Controller, Handler` which are specified in `module.interface.go`
+#### Install Go Module
 
-#### Examples
+```shell
+$ go get github.com/annuums/solanum
+```
 
-- This example let you know how to implement `Module, Controller, Handler`.
+- Fast Example
 
-- `Module`
+```go
+package main
+
+import (
+	"github.com/annuums/solanum"
+)
+
+func main() {
+	server := *solanum.NewSolanum(5050)
+
+	helloUri := "/"
+	helloWorldModule, _ := solanum.NewHelloWorldModule(
+		server.GetGinEngine().Group(helloUri),
+		helloUri,
+	)
+
+	server.AddModule(&helloWorldModule)
+
+	server.Run()
+}
+```
+
+#### Implements Modules, Controllers, Handlers
+
+- You should develop `Module, Controller, Handler` which are specified in `module.interface.go`. This example let you know how to implement `Module, Controller, Handler`.
+
+##### `Module`
 
 ```go
 var helloWorldModule Module
 
 //* Creating New Module
-//* You can just initialize Module
-func NewHelloWorldModule(router *gin.RouterGroup, uri string) (Module, error) {
-	if helloWorldModule == nil {
-		helloWorldModule, _ = NewModule(router, uri)
-	}
-
-	return helloWorldModule, nil
-}
-
-//* Or add controller directly here
 func NewHelloWorldModule(router *gin.RouterGroup, uri string) (Module, error) {
 	if helloWorldModule == nil {
 		helloWorldModule, _ = NewModule(router, uri)
@@ -58,31 +65,21 @@ func NewHelloWorldModule(router *gin.RouterGroup, uri string) (Module, error) {
 }
 ```
 
-- `Controller`
+##### `Controller`
 
 ```go
 var helloWorldController Controller
 
 //* Creating New Controller
-//* You can just initialize Controller
-func NewHelloWorldController() (Controller, error) {
-	if helloWorldController == nil {
-		helloWorldController, _ = NewController()
-	}
-
-	return helloWorldController, nil
-}
-
-//* Or add handlers directly here
 
 func NewHelloWorldController() (Controller, error) {
 	if helloWorldController == nil {
 		helloWorldController, _ = NewController()
 	}
 
-  helloHandler := NewHelloWorldHandler()
+	helloHandler := NewHelloWorldHandler()
  	anotherHandler := NewHelloWorldHandler()
-  ...
+	...
 
 	helloWorldController.AddHandler(helloHandler, anotherHandler, ...)
 
@@ -90,9 +87,10 @@ func NewHelloWorldController() (Controller, error) {
 }
 ```
 
-- `Handler`
-  - For now, you should implement multiple handlers for multiple routings.
-  - It means that if you want to routes `/` and `/healthz`, should implement two `*service` for each of those.
+##### `Handler`
+
+- For now, you should implement multiple handlers for multiple routings.
+- It means that if you want to routes `/` and `/healthz`, should implement two `*service` for each of those.
 
 ```go
 func NewHelloWorldHandler() *Service {
