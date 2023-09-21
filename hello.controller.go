@@ -1,8 +1,8 @@
 package solanum
 
-var helloWorldController Controller
+var helloWorldController *Controller
 
-func NewHelloWorldController() (Controller, error) {
+func NewHelloWorldController() (*Controller, error) {
 	if helloWorldController == nil {
 		helloWorldController, _ = NewController()
 		addHandlers()
@@ -13,8 +13,8 @@ func NewHelloWorldController() (Controller, error) {
 
 func addHandlers() {
 	helloHandler := NewHelloWorldHandler()
-// anotherHandler := NewHelloWorldHandler()
-//* ...
+	// anotherHandler := NewHelloWorldHandler()
+	//* ...
 
-	helloWorldController.AddHandler(helloHandler)
+	(*helloWorldController).AddHandler(helloHandler)
 }

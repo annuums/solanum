@@ -34,7 +34,7 @@ func main() {
 		helloUri,
 	)
 
-	server.AddModule(&helloWorldModule)
+	server.AddModule(helloWorldModule)
 
 	server.Run()
 }
@@ -47,43 +47,47 @@ func main() {
 ##### `Module`
 
 ```go
-var helloWorldModule Module
+var helloWorldModule *Module
 
-//* Creating New Module
-func NewHelloWorldModule(router *gin.RouterGroup, uri string) (Module, error) {
+func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*Module, error) {
 	if helloWorldModule == nil {
 		helloWorldModule, _ = NewModule(router, uri)
+		attachControllers()
 	}
 
-  ctr, _ := NewHelloWorldController()
-  ctr2, _ := NewAnotherController()
-  ...
-
-  helloWorldModule.SetControllers(ctr, ctr2, ...)
-
 	return helloWorldModule, nil
+}
+
+func attachControllers() {
+	//* Attatching Controller Directly
+	ctr, _ := NewHelloWorldController()
+	// ctr2, _ := NewAnotherController()
+	//	...
+
+	(*helloWorldModule).SetControllers(ctr)
 }
 ```
 
 ##### `Controller`
 
 ```go
-var helloWorldController Controller
+var helloWorldController *Controller
 
-//* Creating New Controller
-
-func NewHelloWorldController() (Controller, error) {
+func NewHelloWorldController() (*Controller, error) {
 	if helloWorldController == nil {
 		helloWorldController, _ = NewController()
+		addHandlers()
 	}
 
-	helloHandler := NewHelloWorldHandler()
- 	anotherHandler := NewHelloWorldHandler()
-	...
-
-	helloWorldController.AddHandler(helloHandler, anotherHandler, ...)
-
 	return helloWorldController, nil
+}
+
+func addHandlers() {
+	helloHandler := NewHelloWorldHandler()
+	// anotherHandler := NewHelloWorldHandler()
+	//* ...
+
+	(*helloWorldController).AddHandler(helloHandler)
 }
 ```
 
@@ -95,15 +99,15 @@ func NewHelloWorldController() (Controller, error) {
 ```go
 func NewHelloWorldHandler() *Service {
 	return &Service{
-		uri:        "/",
-		method:     http.MethodGet,
-		handler:    indexHandler,
-		middleware: indexMiddleware,
+		Uri:        "/",
+		Method:     http.MethodGet,
+		Handler:    indexHandler,
+		Middleware: indexMiddleware,
 	}
 }
 
 func indexHandler(ctx *gin.Context) {
-	ctx.JSON(200, "Hello, World! From HelloWorld Index Handler. Greeting!")
+	ctx.JSON(200, "Hello, World! From HelloWorld Index Handler.")
 }
 
 func indexMiddleware(ctx *gin.Context) {
@@ -119,15 +123,17 @@ func indexMiddleware(ctx *gin.Context) {
 
 ```go
 func main() {
-  server := *solanum.NewSolanum(5050)
+	server := *solanum.NewSolanum(5050)
 
 	helloUri := "/"
-	helloWorldModule, _ := NewHelloWorldModule(
+	helloWorldModule, _ := solanum.NewHelloWorldModule(
 		server.GetGinEngine().Group(helloUri),
 		helloUri,
 	)
 
-	server.AddModule(&helloWorldModule)
+	server.AddModule(helloWorldModule)
+
+	server.Run()
 }
 ```
 

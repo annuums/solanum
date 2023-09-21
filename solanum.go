@@ -34,26 +34,6 @@ func (server *runner) Run() {
 	server.Engine.Run(addr)
 }
 
-func (server *runner) appendHelloWorld() *Module {
-	//* Init Vars
-	// helloWorldController, err := NewHelloWorldController()
-
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
-
-	helloUri := "/"
-	helloWorldModule, err := NewHelloWorldModule(
-		server.Engine.Group(helloUri),
-		helloUri,
-	)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	return &helloWorldModule
-}
-
 func (server *runner) InitModules() {
 	//* setRoutes
 	fmt.Println("Initialize Modules...")

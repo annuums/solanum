@@ -19,8 +19,8 @@ type (
 		SetGlobalMiddleware(middlewares ...*gin.HandlerFunc)
 
 		//* Controllers
-		GetControllers() []Controller
-		SetControllers(c ...Controller)
+		GetControllers() []*Controller
+		SetControllers(c ...*Controller)
 
 		//* Controllers -> Handlers
 		SetRoutes()
@@ -28,7 +28,7 @@ type (
 
 	module struct {
 		uri         string
-		controllers []Controller
+		controllers []*Controller
 		middlewares []*gin.HandlerFunc
 		router      *gin.RouterGroup
 	}
@@ -47,17 +47,26 @@ type (
 
 /*
 새로운 모듈을 만듭니다. 이 때, 요청받은 router의 uri가 이미 등록되어 있다면 error를 반환합니다.
-*/
-func NewModule(router *gin.RouterGroup, uri string) (Module, error) {
-	//* Mapper Check
-	//* Check Duplicated URIs
 
-	return &module{
+	//* Middlewares
+	GetGlobalMiddlewares() []*gin.HandlerFunc
+	SetGlobalMiddleware(middlewares ...*gin.HandlerFunc)
+
+	//* Controllers
+	GetControllers() []*Controller
+	SetControllers(c ...*Controller)
+
+	//* Controllers -> Handlers
+	SetRoutes()
+*/
+func NewModule(router *gin.RouterGroup, uri string) (*Module, error) {
+	var m Module = &module{
 		uri:         uri,
 		router:      router,
-		controllers: []Controller{},
+		controllers: []*Controller{},
 		middlewares: []*gin.HandlerFunc{},
-	}, nil
+	}
+	return &m, nil
 }
 
 func (m *module) GetGlobalMiddlewares() []*gin.HandlerFunc {
@@ -67,16 +76,23 @@ func (m *module) SetGlobalMiddleware(middlewares ...*gin.HandlerFunc) {
 	m.middlewares = append(m.middlewares, middlewares...)
 }
 
-func (m *module) GetControllers() []Controller {
+func (m *module) GetControllers() []*Controller {
 	return m.controllers
 }
-func (m *module) SetControllers(c ...Controller) {
+func (m *module) SetControllers(c ...*Controller) {
 	m.controllers = append(m.controllers, c...)
 }
 
 func (m *module) SetRoutes() {
 	for _, c := range m.controllers {
-		services := c.GetHandlers()
+		ctr, ok := (*c).(*controller)
+
+		if !ok {
+			log.Fatal("Fail to set routes for controller::", c)
+		}
+
+		services := ctr.GetHandlers()
+
 		for _, svc := range services {
 			switch svc.Method {
 			case http.MethodGet:
@@ -105,11 +121,11 @@ func (m *module) SetRoutes() {
 /*
 새로운 컨트롤러를 만듭니다.
 */
-func NewController() (Controller, error) {
+func NewController() (*Controller, error) {
 	var ctr Controller = &controller{
 		handlers: nil,
 	}
-	return ctr, nil
+	return &ctr, nil
 }
 
 func (ctr *controller) AddHandler(svc ...*Service) {

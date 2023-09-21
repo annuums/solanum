@@ -11,7 +11,7 @@ func main() {
 		helloUri,
 	)
 
-	server.AddModule(&helloWorldModule)
+	server.AddModule(helloWorldModule)
 
 	server.Run()
 }
