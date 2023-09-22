@@ -1,8 +1,8 @@
 package solanum
 
-var helloWorldController *controller
+var helloWorldController *SolaController
 
-func NewHelloWorldController() (*controller, error) {
+func NewHelloWorldController() (*SolaController, error) {
 	if helloWorldController == nil {
 		helloWorldController, _ = NewController()
 		addHandlers()

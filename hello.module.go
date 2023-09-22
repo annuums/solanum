@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var helloWorldModule *module
+var helloWorldModule *SolaModule
 
-func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*module, error) {
+func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*SolaModule, error) {
 	if helloWorldModule == nil {
 		helloWorldModule, _ = NewModule(router, uri)
 		attachControllers()

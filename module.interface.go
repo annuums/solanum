@@ -9,8 +9,8 @@ import (
 
 type (
 	Controller interface {
-		AddHandler(handler ...*Service)
-		GetHandlers() []*Service
+		AddHandler(handler ...*SolaService)
+		GetHandlers() []*SolaService
 	}
 
 	Module interface {
@@ -26,18 +26,18 @@ type (
 		SetRoutes()
 	}
 
-	module struct {
+	SolaModule struct {
 		uri         string
 		controllers []*Controller
 		middlewares []*gin.HandlerFunc
 		router      *gin.RouterGroup
 	}
 
-	controller struct {
-		handlers []*Service
+	SolaController struct {
+		handlers []*SolaService
 	}
 
-	Service struct {
+	SolaService struct {
 		Uri        string
 		Method     string
 		Handler    gin.HandlerFunc
@@ -59,9 +59,9 @@ type (
 	//* Controllers -> Handlers
 	SetRoutes()
 */
-func NewModule(router *gin.RouterGroup, uri string) (*module, error) {
+func NewModule(router *gin.RouterGroup, uri string) (*SolaModule, error) {
 
-	return &module{
+	return &SolaModule{
 		uri:         uri,
 		router:      router,
 		controllers: []*Controller{},
@@ -69,24 +69,24 @@ func NewModule(router *gin.RouterGroup, uri string) (*module, error) {
 	}, nil
 }
 
-func (m *module) GetGlobalMiddlewares() []*gin.HandlerFunc {
+func (m *SolaModule) GetGlobalMiddlewares() []*gin.HandlerFunc {
 	return m.middlewares
 }
-func (m *module) SetGlobalMiddleware(middlewares ...*gin.HandlerFunc) {
+func (m *SolaModule) SetGlobalMiddleware(middlewares ...*gin.HandlerFunc) {
 	m.middlewares = append(m.middlewares, middlewares...)
 }
 
-func (m *module) GetControllers() []*Controller {
+func (m *SolaModule) GetControllers() []*Controller {
 	return m.controllers
 }
 
-func (m *module) SetControllers(c ...*Controller) {
+func (m *SolaModule) SetControllers(c ...*Controller) {
 	m.controllers = append(m.controllers, c...)
 }
 
-func (m *module) SetRoutes() {
+func (m *SolaModule) SetRoutes() {
 	for _, c := range m.controllers {
-		ctr, ok := (*c).(*controller)
+		ctr, ok := (*c).(*SolaController)
 
 		if !ok {
 			log.Fatal("Fail to set routes for controller::", c)
@@ -122,20 +122,20 @@ func (m *module) SetRoutes() {
 /*
 새로운 컨트롤러를 만듭니다.
 */
-func NewController() (*controller, error) {
-	return &controller{
+func NewController() (*SolaController, error) {
+	return &SolaController{
 		handlers: nil,
 	}, nil
 }
 
-func (ctr *controller) AddHandler(svc ...*Service) {
+func (ctr *SolaController) AddHandler(svc ...*SolaService) {
 	if ctr.handlers == nil {
-		ctr.handlers = make([]*Service, 0)
+		ctr.handlers = make([]*SolaService, 0)
 	}
 
 	// ctr.handlers = append(ctr.handlers, *svc)
 	ctr.handlers = append(ctr.handlers, svc...)
 }
-func (ctr *controller) GetHandlers() []*Service {
+func (ctr *SolaController) GetHandlers() []*SolaService {
 	return ctr.handlers
 }
