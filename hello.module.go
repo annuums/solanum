@@ -1,10 +1,14 @@
 package solanum
 
-import "github.com/gin-gonic/gin"
+import (
+	"log"
 
-var helloWorldModule *Module
+	"github.com/gin-gonic/gin"
+)
 
-func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*Module, error) {
+var helloWorldModule *module
+
+func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*module, error) {
 	if helloWorldModule == nil {
 		helloWorldModule, _ = NewModule(router, uri)
 		attachControllers()
@@ -15,9 +19,17 @@ func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*Module, error) {
 
 func attachControllers() {
 	//* Attatching Controller Directly
-	ctr, _ := NewHelloWorldController()
+	var (
+		ctr Controller
+		err error
+	)
+	ctr, err = NewHelloWorldController()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 	// ctr2, _ := NewAnotherController()
 	//	...
 
-	(*helloWorldModule).SetControllers(ctr)
+	helloWorldModule.SetControllers(&ctr)
 }

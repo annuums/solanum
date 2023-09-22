@@ -59,14 +59,14 @@ type (
 	//* Controllers -> Handlers
 	SetRoutes()
 */
-func NewModule(router *gin.RouterGroup, uri string) (*Module, error) {
-	var m Module = &module{
+func NewModule(router *gin.RouterGroup, uri string) (*module, error) {
+
+	return &module{
 		uri:         uri,
 		router:      router,
 		controllers: []*Controller{},
 		middlewares: []*gin.HandlerFunc{},
-	}
-	return &m, nil
+	}, nil
 }
 
 func (m *module) GetGlobalMiddlewares() []*gin.HandlerFunc {
@@ -79,6 +79,7 @@ func (m *module) SetGlobalMiddleware(middlewares ...*gin.HandlerFunc) {
 func (m *module) GetControllers() []*Controller {
 	return m.controllers
 }
+
 func (m *module) SetControllers(c ...*Controller) {
 	m.controllers = append(m.controllers, c...)
 }
@@ -121,11 +122,10 @@ func (m *module) SetRoutes() {
 /*
 새로운 컨트롤러를 만듭니다.
 */
-func NewController() (*Controller, error) {
-	var ctr Controller = &controller{
+func NewController() (*controller, error) {
+	return &controller{
 		handlers: nil,
-	}
-	return &ctr, nil
+	}, nil
 }
 
 func (ctr *controller) AddHandler(svc ...*Service) {

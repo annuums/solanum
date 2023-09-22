@@ -21,20 +21,19 @@ $ go get github.com/annuums/solanum
 ```go
 package main
 
-import (
-	"github.com/annuums/solanum"
-)
+import "github.com/annuums/solanum"
 
 func main() {
 	server := *solanum.NewSolanum(5050)
 
+	var helloWorldModule solanum.Module
 	helloUri := "/"
-	helloWorldModule, _ := solanum.NewHelloWorldModule(
+	helloWorldModule, _ = solanum.NewHelloWorldModule(
 		server.GetGinEngine().Group(helloUri),
 		helloUri,
 	)
 
-	server.AddModule(helloWorldModule)
+	server.AddModule(&helloWorldModule)
 
 	server.Run()
 }
@@ -47,9 +46,9 @@ func main() {
 ##### `Module`
 
 ```go
-var helloWorldModule *Module
+var helloWorldModule *module
 
-func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*Module, error) {
+func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*module, error) {
 	if helloWorldModule == nil {
 		helloWorldModule, _ = NewModule(router, uri)
 		attachControllers()
@@ -60,20 +59,28 @@ func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*Module, error) {
 
 func attachControllers() {
 	//* Attatching Controller Directly
-	ctr, _ := NewHelloWorldController()
+	var (
+		ctr Controller
+		err error
+	)
+	ctr, err = NewHelloWorldController()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 	// ctr2, _ := NewAnotherController()
 	//	...
 
-	(*helloWorldModule).SetControllers(ctr)
+	helloWorldModule.SetControllers(&ctr)
 }
 ```
 
 ##### `Controller`
 
 ```go
-var helloWorldController *Controller
+var helloWorldController *controller
 
-func NewHelloWorldController() (*Controller, error) {
+func NewHelloWorldController() (*controller, error) {
 	if helloWorldController == nil {
 		helloWorldController, _ = NewController()
 		addHandlers()
@@ -87,7 +94,7 @@ func addHandlers() {
 	// anotherHandler := NewHelloWorldHandler()
 	//* ...
 
-	(*helloWorldController).AddHandler(helloHandler)
+	helloWorldController.AddHandler(helloHandler)
 }
 ```
 
