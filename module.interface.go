@@ -89,7 +89,7 @@ func (m *SolaModule) SetRoutes() {
 		ctr, ok := (*c).(*SolaController)
 
 		if !ok {
-			log.Fatal("Fail to set routes for controller::", c)
+			log.Fatalf("Fail to set routes for module [%v] of [%v]\n", *m, *c)
 		}
 
 		services := ctr.GetHandlers()
