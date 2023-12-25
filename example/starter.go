@@ -5,14 +5,14 @@ import "github.com/annuums/solanum"
 func main() {
 	server := *solanum.NewSolanum(5050)
 
-	var helloWorldModule solanum.Module
-	helloUri := "/"
-	helloWorldModule, _ = solanum.NewHelloWorldModule(
-		server.GetGinEngine().Group(helloUri),
-		helloUri,
+	var healthCheckModule solanum.Module
+	healthCheckUri := "/ping"
+	healthCheckModule, _ = solanum.NewHealthCheckModule(
+		server.GetGinEngine().Group(healthCheckUri),
+		healthCheckUri,
 	)
 
-	server.AddModule(&helloWorldModule)
+	server.AddModule(&healthCheckModule)
 
 	server.Run()
 }
