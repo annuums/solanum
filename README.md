@@ -3,7 +3,7 @@
 - This project provides Modulability to Gin Project.
 - You can implement `Module`, `Controller`, `service` to routes, handles, and intercept requests.
 
-## Annuum, Potato Also Can Change The World!
+## Annuum, Potato Can Change The World!
 
 - dev.whoan(싹난 감자) in Annuums
   - [Github](https://github.com/dev-whoan)
@@ -26,14 +26,14 @@ import "github.com/annuums/solanum"
 func main() {
 	server := *solanum.NewSolanum(5050)
 
-	var helloWorldModule solanum.Module
-	helloUri := "/"
-	helloWorldModule, _ = solanum.NewHelloWorldModule(
-		server.GetGinEngine().Group(helloUri),
-		helloUri,
+	var healthCheckModule solanum.Module
+	healthCheckUri := "/ping"
+	healthCheckModule, _ = solanum.NewHealthCheckModule(
+		server.GetGinEngine().Group(healthCheckUri),
+		healthCheckUri,
 	)
 
-	server.AddModule(&helloWorldModule)
+	server.AddModule(&healthCheckModule)
 
 	server.Run()
 }
@@ -46,15 +46,15 @@ func main() {
 ##### `Module`
 
 ```go
-var helloWorldModule *module
+var helathCheckModule *SolaModule
 
-func NewHelloWorldModule(router *gin.RouterGroup, uri string) (*module, error) {
-	if helloWorldModule == nil {
-		helloWorldModule, _ = NewModule(router, uri)
+func NewHealthCheckModule(router *gin.RouterGroup, uri string) (*SolaModule, error) {
+	if helathCheckModule == nil {
+		helathCheckModule, _ = NewModule(router, uri)
 		attachControllers()
 	}
 
-	return helloWorldModule, nil
+	return helathCheckModule, nil
 }
 
 func attachControllers() {
@@ -63,7 +63,7 @@ func attachControllers() {
 		ctr Controller
 		err error
 	)
-	ctr, err = NewHelloWorldController()
+	ctr, err = NewHealthCheckController()
 
 	if err != nil {
 		log.Fatal(err)
@@ -71,30 +71,30 @@ func attachControllers() {
 	// ctr2, _ := NewAnotherController()
 	//	...
 
-	helloWorldModule.SetControllers(&ctr)
+	helathCheckModule.SetControllers(&ctr)
 }
 ```
 
 ##### `Controller`
 
 ```go
-var helloWorldController *controller
+var healthCheckController *SolaController
 
-func NewHelloWorldController() (*controller, error) {
-	if helloWorldController == nil {
-		helloWorldController, _ = NewController()
+func NewHealthCheckController() (*SolaController, error) {
+	if healthCheckController == nil {
+		healthCheckController, _ = NewController()
 		addHandlers()
 	}
 
-	return helloWorldController, nil
+	return healthCheckController, nil
 }
 
 func addHandlers() {
-	helloHandler := NewHelloWorldHandler()
+	healthCheckHandler := NewHealthCheckHandler()
 	// anotherHandler := NewHelloWorldHandler()
 	//* ...
 
-	helloWorldController.AddHandler(helloHandler)
+	healthCheckController.AddHandler(healthCheckHandler)
 }
 ```
 
@@ -104,21 +104,21 @@ func addHandlers() {
 - It means that if you want to routes `/` and `/healthz`, should implement two `*service` for each of those.
 
 ```go
-func NewHelloWorldHandler() *Service {
-	return &Service{
+func NewHealthCheckHandler() *SolaService {
+	return &SolaService{
 		Uri:        "/",
 		Method:     http.MethodGet,
-		Handler:    indexHandler,
-		Middleware: indexMiddleware,
+		Handler:    hzHandler,
+		Middleware: hzMiddleware,
 	}
 }
 
-func indexHandler(ctx *gin.Context) {
-	ctx.JSON(200, "Hello, World! From HelloWorld Index Handler.")
+func hzHandler(ctx *gin.Context) {
+	ctx.String(200, "pong")
 }
 
-func indexMiddleware(ctx *gin.Context) {
-	log.Println("Hello Index Middleware")
+func hzMiddleware(ctx *gin.Context) {
+	log.Println("Health Checking...")
 	ctx.Next()
 }
 ```
