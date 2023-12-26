@@ -16,6 +16,7 @@ type (
 		AddModule(m ...*Module)
 		GetModules() []*Module
 		GetGinEngine() *gin.Engine
+		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
 
 		Run()
 	}
@@ -29,9 +30,12 @@ type (
 var SolanumRunner Runner
 
 var (
-	CorsDefaultMethods     = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
-	CorsDefaultHeaders     = []string{"Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
-	CorsDefaultCredentials = false
+	CorsDefaultMethods      = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
+	CorsDefaultHeaders      = []string{"Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
+	CorsDefaultCredentials  = false
+	CorsDefaultOriginalFunc = func(origin string) bool {
+		return strings.Contains(origin, ":://localhost")
+	}
 )
 
 func (server *runner) Run() {
@@ -85,10 +89,6 @@ func (server *runner) Cors(url, headers, methods []string, allowCredentials bool
 			},
 		),
 	)
-}
-
-func CorsDefaultOriginalFunc(origin string) bool {
-	return strings.Contains(origin, ":://localhost")
 }
 
 func (server *runner) GetGinEngine() *gin.Engine {
