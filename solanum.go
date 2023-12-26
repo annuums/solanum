@@ -2,6 +2,8 @@ package solanum
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -25,6 +27,12 @@ type (
 )
 
 var SolanumRunner Runner
+
+var (
+	CorsDefaultMethods     = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
+	CorsDefaultHeaders     = []string{"Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
+	CorsDefaultCredentials = false
+)
 
 func (server *runner) Run() {
 	addr := fmt.Sprintf(":%v", server.port)
@@ -64,7 +72,7 @@ func (server *runner) InitGlobalMiddlewares() {
 	//* 3. Authorization, ...
 }
 
-func (server *runner) Cors(...url, ...headers, ...methods, []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int32) {
+func (server *runner) Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int) {
 	server.Engine.Use(
 		cors.New(
 			cors.Config{
@@ -73,10 +81,14 @@ func (server *runner) Cors(...url, ...headers, ...methods, []string, allowCreden
 				AllowHeaders:     headers,
 				AllowCredentials: allowCredentials,
 				AllowOriginFunc:  originFunc,
-				MaxAge: maxAge * time.Hour,
+				MaxAge:           time.Duration(maxAge) * time.Hour,
 			},
 		),
 	)
+}
+
+func CorsOriginalFunc(origin string) bool {
+	return strings.Contains(origin, ":://localhost")
 }
 
 func (server *runner) GetGinEngine() *gin.Engine {
