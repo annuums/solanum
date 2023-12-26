@@ -3,6 +3,7 @@ package solanum
 import (
 	"fmt"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -61,6 +62,21 @@ func (server *runner) InitGlobalMiddlewares() {
 	//* 2. Authentication, ...
 
 	//* 3. Authorization, ...
+}
+
+func (server *runner) Cors(...url, ...headers, ...methods, []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int32) {
+	server.Engine.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:     url,
+				AllowMethods:     methods,
+				AllowHeaders:     headers,
+				AllowCredentials: allowCredentials,
+				AllowOriginFunc:  originFunc,
+				MaxAge: maxAge * time.Hour,
+			},
+		),
+	)
 }
 
 func (server *runner) GetGinEngine() *gin.Engine {
