@@ -87,7 +87,7 @@ func (server *runner) Cors(url, headers, methods []string, allowCredentials bool
 	)
 }
 
-func CorsOriginalFunc(origin string) bool {
+func CorsDefaultOriginalFunc(origin string) bool {
 	return strings.Contains(origin, ":://localhost")
 }
 
