@@ -2,7 +2,6 @@ package solanum
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -16,6 +15,7 @@ type (
 		AddModule(m ...*Module)
 		GetModules() []*Module
 		GetGinEngine() *gin.Engine
+		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
 
 		Run()
 	}
@@ -85,10 +85,6 @@ func (server *runner) Cors(url, headers, methods []string, allowCredentials bool
 			},
 		),
 	)
-}
-
-func CorsOriginalFunc(origin string) bool {
-	return strings.Contains(origin, ":://localhost")
 }
 
 func (server *runner) GetGinEngine() *gin.Engine {
