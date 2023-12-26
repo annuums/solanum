@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -29,9 +30,12 @@ type (
 var SolanumRunner Runner
 
 var (
-	CorsDefaultMethods     = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
-	CorsDefaultHeaders     = []string{"Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
-	CorsDefaultCredentials = false
+	CorsDefaultMethods      = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
+	CorsDefaultHeaders      = []string{"Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
+	CorsDefaultCredentials  = false
+	CorsDefaultOriginalFunc = func(origin string) bool {
+		return strings.Contains(origin, ":://localhost")
+	}
 )
 
 func (server *runner) Run() {
