@@ -37,7 +37,7 @@ func (server *runner) InitModules() {
 	}
 }
 
-func (server *runner) AddModule(m ...*Module) {
+func (server *runner) SetModules(m ...*Module) {
 	if server.modules == nil {
 		server.modules = make([]*Module, 0)
 	}
@@ -45,7 +45,7 @@ func (server *runner) AddModule(m ...*Module) {
 	server.modules = append(server.modules, m...)
 }
 
-func (server *runner) GetModules() []*Module {
+func (server *runner) Modules() []*Module {
 	return server.modules
 }
 
@@ -72,7 +72,7 @@ func (server *runner) Cors(url, headers, methods []string, allowCredentials bool
 	)
 }
 
-func (server *runner) GetGinEngine() *gin.Engine {
+func (server *runner) GinEngine() *gin.Engine {
 	return server.Engine
 }
 

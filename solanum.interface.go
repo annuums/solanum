@@ -26,9 +26,9 @@ type (
 	Runner interface {
 		InitModules()
 		InitGlobalMiddlewares()
-		AddModule(m ...*Module)
-		GetModules() []*Module
-		GetGinEngine() *gin.Engine
+		Modules() []*Module
+		SetModules(m ...*Module)
+		GinEngine() *gin.Engine
 		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
 
 		Run()
