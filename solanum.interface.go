@@ -6,20 +6,31 @@ import (
 
 type (
 	Controller interface {
-		Handlers() []*SolaService
-		SetHandlers(handler ...*SolaService)
+		Handlers() []SolaService
+		SetHandlers(handler ...SolaService)
 	}
 
 	Module interface {
 		//* Middlewares
-		GlobalMiddlewares() []*gin.HandlerFunc
-		SetGlobalMiddleware(middlewares ...*gin.HandlerFunc)
+		GlobalMiddlewares() []gin.HandlerFunc
+		SetGlobalMiddleware(middlewares ...gin.HandlerFunc)
 
 		//* Controllers
-		Controllers() []*Controller
-		SetControllers(c ...*Controller)
+		Controllers() []Controller
+		SetControllers(c ...Controller)
 
 		//* Controllers -> Handlers
 		SetRoutes()
+	}
+
+	Runner interface {
+		InitModules()
+		InitGlobalMiddlewares()
+		AddModule(m ...*Module)
+		GetModules() []*Module
+		GetGinEngine() *gin.Engine
+		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
+
+		Run()
 	}
 )
