@@ -12,8 +12,10 @@ type (
 
 	Module interface {
 		//* Middlewares
-		GlobalMiddlewares() []gin.HandlerFunc
-		SetGlobalMiddleware(middlewares ...gin.HandlerFunc)
+		PreMiddlewares() []gin.HandlerFunc
+		SetPreMiddleware(middlewares ...gin.HandlerFunc)
+		PostMiddlewares() []gin.HandlerFunc
+		SetPostMiddleware(middlewares ...gin.HandlerFunc)
 
 		//* Controllers
 		Controllers() []Controller

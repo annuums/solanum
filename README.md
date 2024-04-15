@@ -45,28 +45,48 @@ func main() {
 ##### `Module`
 
 ```go
+var healthCheckModule *SolaModule
 var hzOnce sync.Once
 
 func NewHealthCheckModule(uri string) *SolaModule {
   hzOnce.Do(func() {
-    if helathCheckModule == nil {
-      helathCheckModule = NewModule(uri)
+    if healthCheckModule == nil {
+      healthCheckModule = NewModule(uri)
       attachControllers()
+      setPreMiddlewares()
+      setPostMiddlewares()
     }
   })
   
-  return helathCheckModule
+  return healthCheckModule
 }
 
 func attachControllers() {
-  //* Attatching Controller Directly
+  // Attatching Controller Directly
   ctr := NewHealthCheckController()
   // ctr2, _ := NewAnotherController()
   //	...
   
-  helathCheckModule.SetControllers(ctr)
+  healthCheckModule.SetControllers(ctr)
 }
 
+func setPreMiddlewares() {
+  healthCheckModule.SetPreMiddleware(
+    func(ctx *gin.Context) {
+      log.Println("Health Checking...")
+    },
+	// Add another pre middleware to handle 
+  )
+}
+
+func setPostMiddlewares() {
+  healthCheckModule.SetPostMiddleware(
+    func(ctx *gin.Context) {
+      log.Println("Health Check Done!")
+    },
+    // Add another post middleware to handle
+  )
+}
 ```
 
 ##### `Controller`
