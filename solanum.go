@@ -46,8 +46,8 @@ func (server *runner) SetModules(m ...Module) {
 		server.modules = make([]*Module, 0)
 	}
 
-	for _, module := range m {
-		server.modules = append(server.modules, &module)
+	for i := range m {
+		server.modules = append(server.modules, &m[i])
 	}
 
 }
