@@ -7,8 +7,7 @@ func main() {
 
 	var healthCheckModule solanum.Module
 	healthCheckUri := "/ping"
-	healthCheckModule, _ = solanum.NewHealthCheckModule(
-		server.GinEngine(),
+	healthCheckModule = solanum.NewHealthCheckModule(
 		healthCheckUri,
 	)
 

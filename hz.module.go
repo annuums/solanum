@@ -2,19 +2,17 @@ package solanum
 
 import (
 	"log"
-
-	"github.com/gin-gonic/gin"
 )
 
 var helathCheckModule *SolaModule
 
-func NewHealthCheckModule(engine *gin.Engine, uri string) (*SolaModule, error) {
+func NewHealthCheckModule(uri string) *SolaModule {
 	if helathCheckModule == nil {
-		helathCheckModule = NewModule(engine, uri)
+		helathCheckModule = NewModule(uri)
 		attachControllers()
 	}
 
-	return helathCheckModule, nil
+	return helathCheckModule
 }
 
 func attachControllers() {
