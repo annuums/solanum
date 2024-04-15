@@ -1,35 +1,28 @@
 package solanum
 
 import (
-	"log"
-
-	"github.com/gin-gonic/gin"
+	"sync"
 )
 
 var helathCheckModule *SolaModule
+var hzOnce sync.Once
 
-func NewHealthCheckModule(router *gin.RouterGroup, uri string) (*SolaModule, error) {
-	if helathCheckModule == nil {
-		helathCheckModule, _ = NewModule(router, uri)
-		attachControllers()
-	}
+func NewHealthCheckModule(uri string) *SolaModule {
+	hzOnce.Do(func() {
+		if helathCheckModule == nil {
+			helathCheckModule = NewModule(uri)
+			attachControllers()
+		}
+	})
 
-	return helathCheckModule, nil
+	return helathCheckModule
 }
 
 func attachControllers() {
 	//* Attatching Controller Directly
-	var (
-		ctr Controller
-		err error
-	)
-	ctr, err = NewHealthCheckController()
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctr := NewHealthCheckController()
 	// ctr2, _ := NewAnotherController()
 	//	...
 
-	helathCheckModule.SetControllers(&ctr)
+	helathCheckModule.SetControllers(ctr)
 }

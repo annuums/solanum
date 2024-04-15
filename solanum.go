@@ -9,24 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type (
-	Runner interface {
-		InitModules()
-		InitGlobalMiddlewares()
-		AddModule(m ...*Module)
-		GetModules() []*Module
-		GetGinEngine() *gin.Engine
-		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
-
-		Run()
-	}
-	runner struct {
-		Engine  *gin.Engine
-		port    int
-		modules []*Module
-	}
-)
-
 var SolanumRunner Runner
 
 var (
@@ -51,12 +33,15 @@ func (server *runner) InitModules() {
 	//* setRoutes
 	fmt.Println("Initialize Modules...")
 	for _, m := range server.modules {
-		var _m Module = *m
-		_m.SetRoutes()
+		(*m).SetRoutes(
+			server.GinEngine().Group(
+				(*m).Uri(),
+			),
+		)
 	}
 }
 
-func (server *runner) AddModule(m ...*Module) {
+func (server *runner) SetModules(m ...*Module) {
 	if server.modules == nil {
 		server.modules = make([]*Module, 0)
 	}
@@ -64,7 +49,7 @@ func (server *runner) AddModule(m ...*Module) {
 	server.modules = append(server.modules, m...)
 }
 
-func (server *runner) GetModules() []*Module {
+func (server *runner) Modules() []*Module {
 	return server.modules
 }
 
@@ -91,7 +76,7 @@ func (server *runner) Cors(url, headers, methods []string, allowCredentials bool
 	)
 }
 
-func (server *runner) GetGinEngine() *gin.Engine {
+func (server *runner) GinEngine() *gin.Engine {
 	return server.Engine
 }
 
