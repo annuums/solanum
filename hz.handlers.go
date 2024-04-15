@@ -9,7 +9,7 @@ import (
 
 func NewHealthCheckHandler() *SolaService {
 	return &SolaService{
-		Uri:        "/",
+		Uri:        "",
 		Method:     http.MethodGet,
 		Handler:    hzHandler,
 		Middleware: hzMiddleware,

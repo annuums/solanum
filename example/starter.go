@@ -8,11 +8,11 @@ func main() {
 	var healthCheckModule solanum.Module
 	healthCheckUri := "/ping"
 	healthCheckModule, _ = solanum.NewHealthCheckModule(
-		server.GetGinEngine().Group(healthCheckUri),
+		server.GinEngine(),
 		healthCheckUri,
 	)
 
-	server.AddModule(&healthCheckModule)
+	server.SetModules(&healthCheckModule)
 
 	server.Run()
 }

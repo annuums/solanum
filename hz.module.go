@@ -8,9 +8,9 @@ import (
 
 var helathCheckModule *SolaModule
 
-func NewHealthCheckModule(router *gin.RouterGroup, uri string) (*SolaModule, error) {
+func NewHealthCheckModule(engine *gin.Engine, uri string) (*SolaModule, error) {
 	if helathCheckModule == nil {
-		helathCheckModule, _ = NewModule(router, uri)
+		helathCheckModule = NewModule(engine, uri)
 		attachControllers()
 	}
 
@@ -31,5 +31,5 @@ func attachControllers() {
 	// ctr2, _ := NewAnotherController()
 	//	...
 
-	helathCheckModule.SetControllers(&ctr)
+	helathCheckModule.SetControllers(ctr)
 }

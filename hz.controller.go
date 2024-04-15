@@ -4,7 +4,7 @@ var healthCheckController *SolaController
 
 func NewHealthCheckController() (*SolaController, error) {
 	if healthCheckController == nil {
-		healthCheckController, _ = NewController()
+		healthCheckController = NewController()
 		addHandlers()
 	}
 
@@ -16,5 +16,5 @@ func addHandlers() {
 	// anotherHandler := NewHelloWorldHandler()
 	//* ...
 
-	healthCheckController.AddHandler(healthCheckHandler)
+	healthCheckController.SetHandlers(*healthCheckHandler)
 }
