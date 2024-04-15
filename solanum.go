@@ -49,7 +49,6 @@ func (server *runner) SetModules(m ...Module) {
 	for i := range m {
 		server.modules = append(server.modules, &m[i])
 	}
-
 }
 
 func (server *runner) Modules() []*Module {
