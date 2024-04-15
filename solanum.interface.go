@@ -20,7 +20,10 @@ type (
 		SetControllers(c ...Controller)
 
 		//* Controllers -> Handlers
-		SetRoutes()
+		SetRoutes(router *gin.RouterGroup)
+
+		// Properties
+		Uri() string
 	}
 
 	Runner interface {

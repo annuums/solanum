@@ -33,7 +33,11 @@ func (server *runner) InitModules() {
 	//* setRoutes
 	fmt.Println("Initialize Modules...")
 	for _, m := range server.modules {
-		(*m).SetRoutes()
+		(*m).SetRoutes(
+			server.GinEngine().Group(
+				(*m).Uri(),
+			),
+		)
 	}
 }
 

@@ -11,7 +11,6 @@ type (
 		uri         string
 		controllers []Controller
 		middlewares []gin.HandlerFunc
-		router      *gin.RouterGroup
 	}
 
 	SolaController struct {
@@ -33,10 +32,9 @@ type (
 )
 
 // NewModule 새로운 모듈을 만듭니다. 이 때, 요청받은 router의 uri가 이미 등록되어 있다면 panic
-func NewModule(engine *gin.Engine, uri string) *SolaModule {
+func NewModule(uri string) *SolaModule {
 	return &SolaModule{
 		uri:         uri,
-		router:      engine.Group(uri),
 		controllers: []Controller{},
 		middlewares: []gin.HandlerFunc{},
 	}
@@ -56,7 +54,7 @@ func (m *SolaModule) SetControllers(c ...Controller) {
 	m.controllers = append(m.controllers, c...)
 }
 
-func (m *SolaModule) SetRoutes() {
+func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 	for _, c := range m.controllers {
 		//ctr, ok := (c).(*SolaController)
 		//
@@ -66,29 +64,33 @@ func (m *SolaModule) SetRoutes() {
 		//
 		//services := ctr.Handlers()
 
-		services := (*&c).Handlers()
+		services := (c).Handlers()
 
 		for _, svc := range services {
 			switch svc.Method {
 			case http.MethodGet:
-				m.router.GET(svc.Uri, svc.Handler)
+				router.GET(svc.Uri, svc.Handler)
 			case http.MethodPost:
-				m.router.POST(svc.Uri, svc.Handler)
+				router.POST(svc.Uri, svc.Handler)
 			case http.MethodPut:
-				m.router.PUT(svc.Uri, svc.Handler)
+				router.PUT(svc.Uri, svc.Handler)
 			case http.MethodPatch:
-				m.router.PATCH(svc.Uri, svc.Handler)
+				router.PATCH(svc.Uri, svc.Handler)
 			case http.MethodDelete:
-				m.router.DELETE(svc.Uri, svc.Handler)
+				router.DELETE(svc.Uri, svc.Handler)
 			case http.MethodHead:
-				m.router.HEAD(svc.Uri, svc.Handler)
+				router.HEAD(svc.Uri, svc.Handler)
 			case http.MethodOptions:
-				m.router.OPTIONS(svc.Uri, svc.Handler)
+				router.OPTIONS(svc.Uri, svc.Handler)
 			default:
 				log.Fatalf("Unknown method registered: %v", svc)
 			}
 		}
 	}
+}
+
+func (m *SolaModule) Uri() string {
+	return m.uri
 }
 
 // NewController 새로운 Controller를 생성합니다.
