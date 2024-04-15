@@ -1,5 +1,7 @@
 package solanum
 
+import "net/http"
+
 var healthCheckController *SolaController
 
 func NewHealthCheckController() (*SolaController, error) {
@@ -12,9 +14,10 @@ func NewHealthCheckController() (*SolaController, error) {
 }
 
 func addHandlers() {
-	healthCheckHandler := NewHealthCheckHandler()
-	// anotherHandler := NewHelloWorldHandler()
-	//* ...
-
-	healthCheckController.SetHandlers(*healthCheckHandler)
+	healthCheckController.SetHandlers(SolaService{
+		Uri:        "",
+		Method:     http.MethodGet,
+		Handler:    hzHandler,
+		Middleware: hzMiddleware,
+	})
 }
