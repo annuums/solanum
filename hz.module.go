@@ -1,21 +1,25 @@
 package solanum
 
 import (
+	"github.com/gin-gonic/gin"
+	"log"
 	"sync"
 )
 
-var helathCheckModule *SolaModule
+var healthCheckModule *SolaModule
 var hzOnce sync.Once
 
 func NewHealthCheckModule(uri string) *SolaModule {
 	hzOnce.Do(func() {
-		if helathCheckModule == nil {
-			helathCheckModule = NewModule(uri)
+		if healthCheckModule == nil {
+			healthCheckModule = NewModule(uri)
 			attachControllers()
+			setPreMiddlewares()
+			setPostMiddlewares()
 		}
 	})
 
-	return helathCheckModule
+	return healthCheckModule
 }
 
 func attachControllers() {
@@ -24,5 +28,21 @@ func attachControllers() {
 	// ctr2, _ := NewAnotherController()
 	//	...
 
-	helathCheckModule.SetControllers(ctr)
+	healthCheckModule.SetControllers(ctr)
+}
+
+func setPreMiddlewares() {
+	healthCheckModule.SetPreMiddleware(
+		func(ctx *gin.Context) {
+			log.Println("Health Checking...")
+		},
+	)
+}
+
+func setPostMiddlewares() {
+	healthCheckModule.SetPostMiddleware(
+		func(ctx *gin.Context) {
+			log.Println("Health Check Done!")
+		},
+	)
 }
