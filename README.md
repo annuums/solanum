@@ -32,7 +32,7 @@ func main() {
     healthCheckUri,
   )
   
-  server.SetModules(&healthCheckModule)
+  server.SetModules(healthCheckModule)
   
   server.Run()
 }

@@ -41,12 +41,15 @@ func (server *runner) InitModules() {
 	}
 }
 
-func (server *runner) SetModules(m ...*Module) {
+func (server *runner) SetModules(m ...Module) {
 	if server.modules == nil {
 		server.modules = make([]*Module, 0)
 	}
 
-	server.modules = append(server.modules, m...)
+	for _, module := range m {
+		server.modules = append(server.modules, &module)
+	}
+
 }
 
 func (server *runner) Modules() []*Module {
