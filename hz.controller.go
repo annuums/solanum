@@ -1,23 +1,25 @@
 package solanum
 
-import "net/http"
+import (
+	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
+)
 
-var healthCheckController *SolaController
+func NewHealthCheckController() *SolaController {
+	healthCheckController := NewController()
 
-func NewHealthCheckController() (*SolaController, error) {
-	if healthCheckController == nil {
-		healthCheckController = NewController()
-		addHandlers()
-	}
-
-	return healthCheckController, nil
-}
-
-func addHandlers() {
 	healthCheckController.SetHandlers(SolaService{
 		Uri:        "",
 		Method:     http.MethodGet,
 		Handler:    hzHandler,
 		Middleware: hzMiddleware,
 	})
+
+	return healthCheckController
+}
+
+func hzMiddleware(ctx *gin.Context) {
+	log.Println("Health Checking...")
+	ctx.Next()
 }

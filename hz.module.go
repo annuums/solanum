@@ -1,31 +1,26 @@
 package solanum
 
 import (
-	"log"
+	"sync"
 )
 
 var helathCheckModule *SolaModule
+var hzOnce sync.Once
 
 func NewHealthCheckModule(uri string) *SolaModule {
-	if helathCheckModule == nil {
-		helathCheckModule = NewModule(uri)
-		attachControllers()
-	}
+	hzOnce.Do(func() {
+		if helathCheckModule == nil {
+			helathCheckModule = NewModule(uri)
+			attachControllers()
+		}
+	})
 
 	return helathCheckModule
 }
 
 func attachControllers() {
 	//* Attatching Controller Directly
-	var (
-		ctr Controller
-		err error
-	)
-	ctr, err = NewHealthCheckController()
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	ctr := NewHealthCheckController()
 	// ctr2, _ := NewAnotherController()
 	//	...
 
