@@ -56,14 +56,6 @@ func (m *SolaModule) SetControllers(c ...Controller) {
 
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 	for _, c := range m.controllers {
-		//ctr, ok := (c).(*SolaController)
-		//
-		//if !ok {
-		//	log.Fatalf("Fail to set routes for module [%v] of [%v]\n", *m, c)
-		//}
-		//
-		//services := ctr.Handlers()
-
 		services := (c).Handlers()
 
 		for _, svc := range services {

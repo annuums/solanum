@@ -30,7 +30,7 @@ type (
 		InitModules()
 		InitGlobalMiddlewares()
 		Modules() []*Module
-		SetModules(m ...*Module)
+		SetModules(m ...Module)
 		GinEngine() *gin.Engine
 		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
 
