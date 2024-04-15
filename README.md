@@ -24,18 +24,17 @@ package main
 import "github.com/annuums/solanum"
 
 func main() {
-	server := *solanum.NewSolanum(5050)
-
-	var healthCheckModule solanum.Module
-	healthCheckUri := "/ping"
-	healthCheckModule, _ = solanum.NewHealthCheckModule(
-		server.GetGinEngine().Group(healthCheckUri),
-		healthCheckUri,
-	)
-
-	server.AddModule(&healthCheckModule)
-
-	server.Run()
+  server := *solanum.NewSolanum(5050)
+  
+  var healthCheckModule solanum.Module
+  healthCheckUri := "/ping"
+  healthCheckModule = solanum.NewHealthCheckModule(
+    healthCheckUri,
+  )
+  
+  server.SetModules(&healthCheckModule)
+  
+  server.Run()
 }
 ```
 
@@ -46,56 +45,51 @@ func main() {
 ##### `Module`
 
 ```go
-var helathCheckModule *SolaModule
+var hzOnce sync.Once
 
-func NewHealthCheckModule(router *gin.RouterGroup, uri string) (*SolaModule, error) {
-	if helathCheckModule == nil {
-		helathCheckModule, _ = NewModule(router, uri)
-		attachControllers()
-	}
-
-	return helathCheckModule, nil
+func NewHealthCheckModule(uri string) *SolaModule {
+  hzOnce.Do(func() {
+    if helathCheckModule == nil {
+      helathCheckModule = NewModule(uri)
+      attachControllers()
+    }
+  })
+  
+  return helathCheckModule
 }
 
 func attachControllers() {
-	//* Attatching Controller Directly
-	var (
-		ctr Controller
-		err error
-	)
-	ctr, err = NewHealthCheckController()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	// ctr2, _ := NewAnotherController()
-	//	...
-
-	helathCheckModule.SetControllers(&ctr)
+  //* Attatching Controller Directly
+  ctr := NewHealthCheckController()
+  // ctr2, _ := NewAnotherController()
+  //	...
+  
+  helathCheckModule.SetControllers(ctr)
 }
+
 ```
 
 ##### `Controller`
 
 ```go
-var healthCheckController *SolaController
-
-func NewHealthCheckController() (*SolaController, error) {
-	if healthCheckController == nil {
-		healthCheckController, _ = NewController()
-		addHandlers()
-	}
-
-	return healthCheckController, nil
+func NewHealthCheckController() *SolaController {
+  healthCheckController := NewController()
+  
+  healthCheckController.SetHandlers(SolaService{
+    Uri:        "",
+    Method:     http.MethodGet,
+    Handler:    hzHandler,
+    Middleware: hzMiddleware,
+  })
+  
+  return healthCheckController
 }
 
-func addHandlers() {
-	healthCheckHandler := NewHealthCheckHandler()
-	// anotherHandler := NewHelloWorldHandler()
-	//* ...
-
-	healthCheckController.AddHandler(healthCheckHandler)
+func hzMiddleware(ctx *gin.Context) {
+  log.Println("Health Checking...")
+  ctx.Next()
 }
+
 ```
 
 ##### `Handler`
@@ -104,22 +98,8 @@ func addHandlers() {
 - It means that if you want to routes `/` and `/healthz`, should implement two `*service` for each of those.
 
 ```go
-func NewHealthCheckHandler() *SolaService {
-	return &SolaService{
-		Uri:        "/",
-		Method:     http.MethodGet,
-		Handler:    hzHandler,
-		Middleware: hzMiddleware,
-	}
-}
-
 func hzHandler(ctx *gin.Context) {
-	ctx.String(200, "pong")
-}
-
-func hzMiddleware(ctx *gin.Context) {
-	log.Println("Health Checking...")
-	ctx.Next()
+    ctx.String(200, "pong")
 }
 ```
 
@@ -134,7 +114,6 @@ func main() {
 
 	helloUri := "/"
 	helloWorldModule, _ := solanum.NewHelloWorldModule(
-		server.GetGinEngine().Group(helloUri),
 		helloUri,
 	)
 
