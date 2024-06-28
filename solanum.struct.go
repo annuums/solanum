@@ -50,13 +50,21 @@ func (m *SolaModule) PostMiddlewares() []gin.HandlerFunc {
 }
 
 func (m *SolaModule) SetPreMiddleware(middlewares ...gin.HandlerFunc) {
-	m.preMiddlewares = make([]gin.HandlerFunc, 0)
+	m.preMiddlewares = make([]gin.HandlerFunc, len(middlewares))
 	m.preMiddlewares = append(m.preMiddlewares, middlewares...)
 }
 
 func (m *SolaModule) SetPostMiddleware(middlewares ...gin.HandlerFunc) {
-	m.postMiddlewares = make([]gin.HandlerFunc, 0)
+	m.postMiddlewares = make([]gin.HandlerFunc, len(middlewares))
 	m.postMiddlewares = append(m.postMiddlewares, middlewares...)
+}
+
+func (m *SolaModule) AddPreMiddleware(middleware gin.HandlerFunc) {
+	m.preMiddlewares = append(m.preMiddlewares, middleware)
+}
+
+func (m *SolaModule) AddPostMiddleware(middleware gin.HandlerFunc) {
+	m.postMiddlewares = append(m.postMiddlewares, middleware)
 }
 
 func (m *SolaModule) Controllers() []Controller {
