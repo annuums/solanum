@@ -63,16 +63,18 @@ func (server *runner) InitGlobalMiddlewares() {
 	//* 3. Authorization, ...
 }
 
-func (server *runner) Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int) {
+func (server *runner) Cors(opts ...func(*CorsOption)) {
+	options := CorsOptions(opts...)
+
 	server.Engine.Use(
 		cors.New(
 			cors.Config{
-				AllowOrigins:     url,
-				AllowMethods:     methods,
-				AllowHeaders:     headers,
-				AllowCredentials: allowCredentials,
-				AllowOriginFunc:  originFunc,
-				MaxAge:           time.Duration(maxAge) * time.Hour,
+				AllowOrigins:     options.Urls,
+				AllowMethods:     options.Methods,
+				AllowHeaders:     options.Headers,
+				AllowCredentials: options.AllowCredentials,
+				AllowOriginFunc:  options.OriginFunc,
+				MaxAge:           time.Duration(options.MaxAge) * time.Hour,
 			},
 		),
 	)
