@@ -9,7 +9,7 @@ type CorsOption struct {
 	MaxAge           int
 }
 
-func WithUrl(urls []string) func(*CorsOption) {
+func WithUrls(urls []string) func(*CorsOption) {
 	return func(s *CorsOption) {
 		s.Urls = urls
 	}
