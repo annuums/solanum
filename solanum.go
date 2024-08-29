@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -25,13 +26,13 @@ func (server *runner) Run() {
 
 	SolanumRunner.InitModules()
 
-	fmt.Println("Solanum is running on ", addr)
+	log.Println("Solanum is running on ", addr)
 	server.Engine.Run(addr)
 }
 
 func (server *runner) InitModules() {
 	//* setRoutes
-	fmt.Println("Initialize Modules...")
+	log.Println("Initialize Modules...")
 	for _, m := range server.modules {
 		(*m).SetRoutes(
 			server.GinEngine().Group(
