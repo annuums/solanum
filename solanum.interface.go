@@ -36,7 +36,7 @@ type (
 		Modules() []*Module
 		SetModules(m ...Module)
 		GinEngine() *gin.Engine
-		Cors(url, headers, methods []string, allowCredentials bool, originFunc func(origin string) bool, maxAge int)
+		Cors(opts ...func(*CorsOption))
 
 		Run()
 	}
