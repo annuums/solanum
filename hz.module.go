@@ -32,7 +32,7 @@ func attachControllers() {
 }
 
 func setPreMiddlewares() {
-	healthCheckModule.SetPreMiddleware(
+	healthCheckModule.SetPreMiddlewares(
 		func(ctx *gin.Context) {
 			log.Println("Health Checking...")
 		},
@@ -40,7 +40,7 @@ func setPreMiddlewares() {
 }
 
 func setPostMiddlewares() {
-	healthCheckModule.SetPostMiddleware(
+	healthCheckModule.SetPostMiddlewares(
 		func(ctx *gin.Context) {
 			log.Println("Health Check Done!")
 		},
