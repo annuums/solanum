@@ -21,6 +21,12 @@ var (
 	}
 )
 
+const (
+	// DependencyPrefix is the prefix used in Gin context keys for injected dependencies.
+	DependencyPrefix = "__sol_dep__"
+)
+
+// Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 	addr := fmt.Sprintf(":%v", server.port)
 

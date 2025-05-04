@@ -2,9 +2,22 @@ package solanum
 
 import (
 	"github.com/gin-gonic/gin"
+	"reflect"
 )
 
 type (
+	// DependencyConfig defines a key and Go type for a dependency to be injected into handlers.
+	DependencyConfig struct {
+		// Key identifier used when registering and retrieving the dependency
+		// registration key for the dependency
+		Key string
+
+		// Type reflect.Type of the interface or concrete type to resolve
+		// expected reflect.Type for resolution
+		Type reflect.Type
+	}
+
+	// Controller declares a set of service handlers for a logical grouping of routes.
 	Controller interface {
 		Handlers() []SolaService
 		SetHandlers(handler ...SolaService)
@@ -23,7 +36,13 @@ type (
 		Controllers() []Controller
 		SetControllers(c ...Controller)
 
-		//* Controllers -> Handlers
+		// Dependencies returns the list of dependencies that this module injects.
+		Dependencies() []DependencyConfig
+
+		// SetDependencies defines which dependencies to inject via middleware.
+		SetDependencies(deps ...DependencyConfig)
+
+		// SetRoutes binds the module's controllers, middleware, and routes onto a RouterGroup.
 		SetRoutes(router *gin.RouterGroup)
 
 		// Properties
