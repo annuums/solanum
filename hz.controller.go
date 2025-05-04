@@ -7,11 +7,13 @@ import (
 func NewHealthCheckController() *SolaController {
 	healthCheckController := NewController()
 
-	healthCheckController.SetHandlers(SolaService{
-		Uri:     "",
-		Method:  http.MethodGet,
-		Handler: hzHandler,
-	})
+	healthCheckController.SetHandlers(
+		&SolaService{
+			Uri:     "",
+			Method:  http.MethodGet,
+			Handler: hzHandler,
+		},
+	)
 
 	return healthCheckController
 }

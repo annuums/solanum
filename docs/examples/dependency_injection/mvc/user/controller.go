@@ -9,12 +9,12 @@ func NewController() *solanum.SolaController {
 	ctrl := solanum.NewController()
 
 	ctrl.SetHandlers(
-		solanum.SolaService{
+		&solanum.SolaService{
 			Uri:     "/users",
 			Method:  http.MethodGet,
 			Handler: retrieveUser,
 		},
-		solanum.SolaService{
+		&solanum.SolaService{
 			Uri:     "/users",
 			Method:  http.MethodPost,
 			Handler: addUser,
