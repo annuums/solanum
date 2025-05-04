@@ -20,10 +20,10 @@ type (
 	// Controller declares a set of service handlers for a logical grouping of routes.
 	Controller interface {
 		// Handlers returns the slice of service definitions this controller manages.
-		Handlers() []SolaService
+		Handlers() []*SolaService
 
 		// SetHandlers adds one or more SolaService entries to the controller.
-		SetHandlers(handler ...SolaService)
+		SetHandlers(handler ...*SolaService)
 	}
 
 	// Module represents a self-contained HTTP module with its own URI prefix,

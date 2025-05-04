@@ -20,7 +20,7 @@ type (
 	// SolaController groups one or more SolaService handlers under a logical controller.
 	// It implements the Controller interface, managing a list of SolaService entries.
 	SolaController struct {
-		handlers []SolaService // handlers service handlers defined for this controller
+		handlers []*SolaService // handlers service handlers defined for this controller
 	}
 
 	// SolaService represents a single HTTP route handler configuration.
@@ -169,14 +169,14 @@ func (m *SolaModule) Uri() string {
 // NewController constructs an empty SolaController ready to receive handlers.
 func NewController() *SolaController {
 	return &SolaController{
-		handlers: nil,
+		handlers: make([]*SolaService, 0),
 	}
 }
 
 // SetHandlers appends one or more SolaService entries to the controller's handler list.
-func (ctr *SolaController) SetHandlers(handlers ...SolaService) {
+func (ctr *SolaController) SetHandlers(handlers ...*SolaService) {
 	if ctr.handlers == nil {
-		ctr.handlers = make([]SolaService, 0)
+		ctr.handlers = make([]*SolaService, 0)
 	}
 
 	// ctr.handlers = append(ctr.handlers, *svc)
@@ -184,6 +184,6 @@ func (ctr *SolaController) SetHandlers(handlers ...SolaService) {
 }
 
 // Handlers returns the slice of SolaService entries managed by this controller.
-func (ctr *SolaController) Handlers() []SolaService {
+func (ctr *SolaController) Handlers() []*SolaService {
 	return ctr.handlers
 }
