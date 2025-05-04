@@ -23,3 +23,4 @@ go.work
 Dockerfile
 
 .idea
+.DS_Store
