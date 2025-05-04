@@ -10,14 +10,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SolanumRunner holds the global Runner instance used to configure and start the server.
 var SolanumRunner Runner
 
+// Default CORS settings
 var (
 	CorsDefaultMethods      = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
-	CorsDefaultHeaders      = []string{"Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
+	CorsDefaultHeaders      = []string{"Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
 	CorsDefaultCredentials  = false
 	CorsDefaultOriginalFunc = func(origin string) bool {
-		return strings.Contains(origin, ":://localhost")
+		// Default origin function allows any localhost origin
+		return strings.Contains(origin, "://localhost")
 	}
 )
 
@@ -36,8 +39,8 @@ func (server *runner) Run() {
 	server.Engine.Run(addr)
 }
 
+// InitModules sets up routing groups for each Module and applies their routes.
 func (server *runner) InitModules() {
-	//* setRoutes
 	log.Println("Initialize Modules...")
 	for _, m := range server.modules {
 		(*m).SetRoutes(
@@ -48,6 +51,7 @@ func (server *runner) InitModules() {
 	}
 }
 
+// SetModules registers one or more Module implementations with the Runner.
 func (server *runner) SetModules(m ...Module) {
 	if server.modules == nil {
 		server.modules = make([]*Module, 0)
@@ -58,10 +62,13 @@ func (server *runner) SetModules(m ...Module) {
 	}
 }
 
+// Modules returns the slice of all registered Module pointers.
 func (server *runner) Modules() []*Module {
 	return server.modules
 }
 
+// InitGlobalMiddlewares is a placeholder for registering application-wide middlewares
+// such as logging, authentication, and authorization. Implement as needed.
 func (server *runner) InitGlobalMiddlewares() {
 	//* 1. Logger, ...
 
@@ -70,6 +77,8 @@ func (server *runner) InitGlobalMiddlewares() {
 	//* 3. Authorization, ...
 }
 
+// Cors applies configured CORS settings to the Gin engine using the cors middleware.
+// Accepts functional options for customizing allowed origins, methods, headers, etc.
 func (server *runner) Cors(opts ...func(*CorsOption)) {
 	options := CorsOptions(opts...)
 
@@ -87,10 +96,13 @@ func (server *runner) Cors(opts ...func(*CorsOption)) {
 	)
 }
 
+// GinEngine returns the underlying *gin.Engine for direct access and customization.
 func (server *runner) GinEngine() *gin.Engine {
 	return server.Engine
 }
 
+// NewSolanum creates (once) and returns the global Runner configured for the given port.
+// It ensures global middlewares are initialized. Subsequent calls return the same Runner.
 func NewSolanum(port int) *Runner {
 	if SolanumRunner == nil {
 		SolanumRunner = &runner{
