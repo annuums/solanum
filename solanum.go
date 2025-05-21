@@ -32,20 +32,26 @@ const (
 // ValidateDependencies checks all registered modules for their dependencies.
 func (server *runner) ValidateDependencies() error {
 	for _, mPtr := range server.modules {
-		m := *mPtr
-		for _, dep := range m.Dependencies() {
+
+		for _, dep := range (*mPtr).Dependencies() {
+
 			var err error
 			if dep.Type != nil {
+
 				_, err = ResolveByType(dep.Key, dep.Type)
 			} else {
+
 				_, err = Resolve(dep.Key)
 			}
+
 			if err != nil {
+
 				return fmt.Errorf("dependency validation failed for key=%q type=%v: %w",
 					dep.Key, dep.Type, err)
 			}
 		}
 	}
+
 	return nil
 }
 
