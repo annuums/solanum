@@ -3,6 +3,7 @@ package solanum
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"time"
 
@@ -29,9 +30,59 @@ const (
 	DependencyPrefix = "__sol_dep__"
 )
 
+// ValidateDependencies checks all registered modules for their dependencies.
+func (server *runner) ValidateDependencies() error {
+	for _, mPtr := range server.modules {
+
+		for _, dep := range (*mPtr).Dependencies() {
+
+			inst, err := Resolve(dep.Key)
+			if err != nil {
+				return fmt.Errorf(
+					"dependency validation failed for key=%q :: %w",
+					dep.Key,
+					err,
+				)
+			}
+
+			if dep.Type != nil {
+
+				instType := reflect.TypeOf(inst)
+
+				switch dep.Type.Kind() {
+				case reflect.Interface:
+
+					if !instType.Implements(dep.Type) {
+
+						return fmt.Errorf(
+							"dependency %q: instance type %v does not implement %v",
+							dep.Key,
+							instType,
+							dep.Type,
+						)
+					}
+
+				default:
+
+					if !instType.AssignableTo(dep.Type) {
+
+						return fmt.Errorf("dependency %q: instance type %T not assignable to %v", dep.Key, instType, dep.Type)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 	addr := fmt.Sprintf(":%v", server.port)
+
+	if err := server.ValidateDependencies(); err != nil {
+		log.Fatalf("❌ Dependency check failed: %v", err)
+	}
 
 	SolanumRunner.InitModules()
 

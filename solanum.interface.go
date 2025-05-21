@@ -87,6 +87,9 @@ type (
 		// Cors applies CORS configuration to the Gin engine using functional options.
 		Cors(opts ...func(*CorsOption))
 
+		// ValidateDependencies checks that all dependencies are registered.
+		ValidateDependencies() error
+
 		// Run boots the HTTP server, initializing modules and listening on the configured port.
 		Run()
 	}
