@@ -1,10 +1,10 @@
 package solanum_test
 
 import (
+	solanum "github.com/annuums/solanum/container"
 	"reflect"
 	"testing"
 
-	solanum "github.com/annuums/solanum"
 	"github.com/stretchr/testify/assert"
 )
 

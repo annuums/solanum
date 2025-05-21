@@ -3,6 +3,7 @@ package solanum
 import (
 	"database/sql"
 	"github.com/annuums/solanum"
+	container2 "github.com/annuums/solanum/container"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"sync"
@@ -60,11 +61,11 @@ func TestValidateDependencies_OK(t *testing.T) {
 	resetContainer()
 
 	// Register a dummy provider for key "foo"
-	solanum.Register("foo", func() int { return 123 }, solanum.WithSingleton())
+	container2.Register("foo", func() int { return 123 }, container2.WithSingleton())
 
 	// Create a module that depends on "foo"
 	mod := solanum.NewModule("/test")
-	mod.SetDependencies(solanum.Dep[int]("foo"))
+	mod.SetDependencies(*container2.Dep[int]("foo"))
 
 	// Setup runner with the module
 	r := solanum.NewSolanum(0)
@@ -84,7 +85,7 @@ func TestValidateDependencies_FailureMissing(t *testing.T) {
 	// Do not register any provider for "missing"
 
 	mod := solanum.NewModule("/test")
-	mod.SetDependencies(solanum.Dep[string]("missing"))
+	mod.SetDependencies(*container2.Dep[string]("missing"))
 
 	r := solanum.NewSolanum(0)
 	runnerIface := *r
@@ -110,27 +111,27 @@ func TestWithDepInjection(t *testing.T) {
 	resetContainer()
 
 	// Register *sql.DB as singleton under key "db"
-	solanum.Register(
+	container2.Register(
 		"db",
 		func() *sql.DB {
 			// Return a dummy *sql.DB (nil is ok for test)
 			return &sql.DB{}
 		},
-		solanum.WithSingleton(),
+		container2.WithSingleton(),
 	)
 
 	// Register DummyService with transient scope and WithDep for "db"
-	solanum.Register(
+	container2.Register(
 		"svc",
 		func(ds *sql.DB) *DummyService {
 			return NewDummyService(ds)
 		},
-		solanum.WithTransient(),
-		solanum.WithDep[*sql.DB]("db"),
+		container2.WithTransient(),
+		container2.WithDep[*sql.DB]("db"),
 	)
 
 	// Resolve the service
-	inst, err := solanum.Resolve("svc")
+	inst, err := container2.Resolve("svc")
 	assert.NoError(t, err)
 
 	svc, ok := inst.(*DummyService)
@@ -143,22 +144,22 @@ func TestAutomaticTypeInjection(t *testing.T) {
 	resetContainer()
 
 	// Register *sql.DB under key "db"
-	solanum.Register(
+	container2.Register(
 		"db",
 		func() *sql.DB { return &sql.DB{} },
-		solanum.WithSingleton(),
+		container2.WithSingleton(),
 	)
 
 	// Register service without WithDep, relying on reflect-based auto deps
-	solanum.Register(
+	container2.Register(
 		"svc2",
 		func(ds *sql.DB) *DummyService {
 			return NewDummyService(ds)
 		},
-		solanum.WithTransient(),
+		container2.WithTransient(),
 	)
 
-	inst, err := solanum.Resolve("svc2")
+	inst, err := container2.Resolve("svc2")
 	assert.NoError(t, err)
 
 	svc, ok := inst.(*DummyService)

@@ -1,6 +1,7 @@
 package solanum_test
 
 import (
+	"github.com/annuums/solanum/container"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,9 +67,9 @@ func TestControllersAndDependencies(t *testing.T) {
 	assert.Len(t, m.Controllers(), 1)
 
 	// Dependency configuration
-	dc := solanum.Dep[string]("key")
-	m.SetDependencies(dc)
-	assert.Len(t, m.Dependencies(), 1)
+	dc := container.Dep[string]("key")
+	m.SetDependencies(*dc)
+	assert.Len(t, *m.Dependencies(), 1)
 }
 
 // TestSetRoutesWithoutDependencies ensures routes work with no DI configured.
@@ -93,14 +94,14 @@ func TestSetRoutesWithoutDependencies(t *testing.T) {
 // TestSetRoutesWithDependencies verifies DI middleware injects FooService.
 func TestSetRoutesWithDependencies(t *testing.T) {
 	// Register FooService provider
-	solanum.Register("foo", func() impl { return impl{} },
-		solanum.WithSingleton(),
-		solanum.As((*FooService)(nil)),
+	container.Register("foo", func() impl { return impl{} },
+		container.WithSingleton(),
+		container.As((*FooService)(nil)),
 	)
 
 	r := gin.New()
 	m := solanum.NewModule("/api")
-	m.SetDependencies(solanum.Dep[FooService]("foo"))
+	m.SetDependencies(*container.Dep[FooService]("foo"))
 
 	// Handler uses injected service
 	ctrl := solanum.NewController()
@@ -108,7 +109,7 @@ func TestSetRoutesWithDependencies(t *testing.T) {
 		Uri:    "/dep",
 		Method: "GET",
 		Handler: func(c *gin.Context) {
-			d := solanum.GetDependency[FooService](c, "foo")
+			d := container.GetDependency[FooService](c, "foo")
 			c.String(http.StatusOK, d.Foo())
 		},
 	})

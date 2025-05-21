@@ -1,17 +1,14 @@
 package user
 
 import (
-	"github.com/annuums/solanum"
+	"github.com/annuums/solanum/container"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"time"
 )
 
 func retrieveUser(c *gin.Context) {
-	repo := solanum.GetDependency[UserRepository](c, "userRepository")
-
-	log.Printf("repo : %v\n", repo)
+	repo := container.GetDependency[UserRepository](c, "userRepository")
 
 	users, err := repo.FindAll()
 	if err != nil {
@@ -31,7 +28,7 @@ func addUser(c *gin.Context) {
 		return
 	}
 	u := &User{Name: req.Name, Email: req.Email, CreatedAt: time.Now()}
-	repo := solanum.GetDependency[UserRepository](c, "userRepository")
+	repo := container.GetDependency[UserRepository](c, "userRepository")
 	if err := repo.Create(u); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"github.com/annuums/solanum/container"
 	"github.com/gin-gonic/gin"
 )
 
@@ -9,11 +10,11 @@ type (
 	// SolaModule encapsulates a self-contained HTTP module with its own URI prefix,
 	// controllers, middleware stacks, and dependency configurations.
 	SolaModule struct {
-		uri             string             // base URI path for the module (e.g., "/users")
-		controllers     []Controller       // registered controllers for this module
-		preMiddlewares  []gin.HandlerFunc  // middleware to run before each handler
-		postMiddlewares []gin.HandlerFunc  // middleware to run after each handler
-		dependencies    []DependencyConfig // dependencies to inject via DI middleware
+		uri             string                         // base URI path for the module (e.g., "/users")
+		controllers     []Controller                   // registered controllers for this module
+		preMiddlewares  []gin.HandlerFunc              // middleware to run before each handler
+		postMiddlewares []gin.HandlerFunc              // middleware to run after each handler
+		dependencies    *[]*container.DependencyConfig // dependencies to inject via DI middleware
 	}
 
 	// SolaController groups one or more SolaService handlers under a logical controller.
@@ -52,7 +53,7 @@ func NewModule(uri string) *SolaModule {
 		controllers:     []Controller{},
 		preMiddlewares:  []gin.HandlerFunc{},
 		postMiddlewares: []gin.HandlerFunc{},
-		dependencies:    []DependencyConfig{},
+		dependencies:    &[]*container.DependencyConfig{},
 	}
 }
 
@@ -99,19 +100,23 @@ func (m *SolaModule) SetControllers(c ...Controller) {
 }
 
 // Dependencies returns the list of DependencyConfig entries for this module.
-func (m *SolaModule) Dependencies() []DependencyConfig { return m.dependencies }
+func (m *SolaModule) Dependencies() *[]*container.DependencyConfig { return m.dependencies }
 
 // SetDependencies replaces the module's dependency list with the provided configs.
-func (m *SolaModule) SetDependencies(deps ...DependencyConfig) {
-	m.dependencies = make([]DependencyConfig, len(deps))
-	copy(m.dependencies, deps)
+func (m *SolaModule) SetDependencies(deps ...container.DependencyConfig) {
+	*m.dependencies = make([]*container.DependencyConfig, len(deps))
+
+	for i := range deps {
+
+		(*m.dependencies)[i] = &deps[i]
+	}
 }
 
 // SetRoutes registers the module's routes, middleware, and DI middleware on the given RouterGroup.
 // It applies DI if dependencies are defined, then mounts each SolaService handler with pre- and post-middleware.
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 	// Apply DI middleware if dependencies exist
-	if len(m.dependencies) > 0 {
+	if len(*m.dependencies) > 0 {
 		router.Use(diMiddleware(m.dependencies))
 	}
 
@@ -131,10 +136,10 @@ func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 
 // diMiddleware returns a Gin middleware that resolves and injects dependencies for each request.
 // It sets each dependency instance in the context under DependencyPrefix+key.
-func diMiddleware(deps []DependencyConfig) gin.HandlerFunc {
+func diMiddleware(deps *[]*container.DependencyConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		seen := make(map[string]struct{}, len(deps))
-		for _, d := range deps {
+		seen := make(map[string]struct{}, len(*deps))
+		for _, d := range *deps {
 
 			if _, dup := seen[d.Key]; dup {
 				panic(fmt.Sprintf("duplicate dependency key: %q", d.Key))
@@ -144,16 +149,16 @@ func diMiddleware(deps []DependencyConfig) gin.HandlerFunc {
 			var inst interface{}
 			var err error
 			if d.Type != nil {
-				inst, err = ResolveByType(d.Key, d.Type)
+				inst, err = container.ResolveByType(d.Key, d.Type)
 			} else {
-				inst, err = Resolve(d.Key)
+				inst, err = container.Resolve(d.Key)
 			}
 
 			if err != nil {
 				panic(fmt.Errorf("failed to resolve %q: %w", d.Key, err))
 			}
 
-			depKey := DependencyPrefix + d.Key
+			depKey := container.DependencyPrefix + d.Key
 			c.Set(depKey, inst)
 		}
 		c.Next()
