@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sync"
 )
@@ -11,7 +12,7 @@ import (
 // any initialized instance, initialization hook, and type metadata.
 type providerEntry struct {
 	// factory constructs a new instance of the provider.
-	factory func() interface{}
+	factory func(...interface{}) interface{}
 
 	// singleton indicates whether to reuse the same instance across resolves.
 	singleton bool
@@ -30,6 +31,9 @@ type providerEntry struct {
 
 	// providerType is the concrete type returned by the factory or provided directly.
 	providerType reflect.Type
+
+	// deps holds the dependencies of the provider, if any.
+	deps []DependencyConfig
 }
 
 // container is the internal DI container managing provider registrations
@@ -66,6 +70,21 @@ func WithInit(hook func(interface{})) RegisterOption {
 	return func(pe *providerEntry) { pe.initHook = hook }
 }
 
+// WithDep lets you specify a key and type for the dependency.
+// declares dep, before calling your provider func,
+// the container should Resolve(key) and inject it as the T-typed argument.
+func WithDep[T any](key string) RegisterOption {
+
+	return func(pe *providerEntry) {
+
+		var ptr *T
+		pe.deps = append(pe.deps, DependencyConfig{
+			Key:  key,
+			Type: reflect.TypeOf(ptr).Elem(),
+		})
+	}
+}
+
 // As binds this provider under a specified interface type, allowing ResolveByType to work.
 // Example: solanum.As((*MyInterface)(nil)) binds to MyInterface.
 func As(ifacePtr interface{}) RegisterOption {
@@ -80,37 +99,87 @@ func As(ifacePtr interface{}) RegisterOption {
 //
 // Options control scope, init hooks, and interface binding.
 func Register(key string, provider interface{}, opts ...RegisterOption) {
+
 	// Default to singleton scope
 	pe := &providerEntry{singleton: true}
+
+	for _, opt := range opts {
+		opt(pe)
+	}
 
 	pv := reflect.ValueOf(provider)
 	pt := pv.Type()
 
+	// inference dependency
+	deps := pe.deps
+
+	if pt.Kind() == reflect.Func && len(deps) == 0 {
+
+		for i := 0; i < pt.NumIn(); i++ {
+
+			deps = append(deps, DependencyConfig{
+				Key:  "", // deps are not yet registered
+				Type: pt.In(i),
+			})
+		}
+	}
+
+	log.Printf("deps :: %v\n", deps)
+
 	// If provider is a function, wrap it to perform nested dependency resolution
 	if pt.Kind() == reflect.Func {
-		pe.factory = func() interface{} {
+
+		pe.factory = func(...interface{}) interface{} {
 			// Resolve each function parameter by type
-			in := make([]reflect.Value, pt.NumIn())
-			for i := 0; i < pt.NumIn(); i++ {
-				argType := pt.In(i)
-				dep, err := globalContainer.resolveByReflectType(argType)
-				if err != nil {
-					panic(fmt.Errorf("cannot resolve dependency %v: %w", argType, err))
+
+			args := make([]reflect.Value, len(deps))
+			for i, d := range deps {
+
+				var inst interface{}
+				var err error
+
+				// pick ResolveByType if interface, else Resolve by key
+
+				if d.Key != "" {
+
+					if d.Type.Kind() == reflect.Interface {
+
+						inst, err = ResolveByType(d.Key, d.Type)
+					} else {
+
+						inst, err = Resolve(d.Key)
+					}
+				} else {
+
+					// inference dependency from type only
+					inst, err = globalContainer.resolveByReflectType(d.Type)
 				}
-				in[i] = reflect.ValueOf(dep)
+
+				if err != nil {
+
+					panic(fmt.Errorf("failed to resolve %q [%v]: %w", d.Key, d.Type, err))
+				}
+
+				args[i] = reflect.ValueOf(inst)
 			}
-			// Call factory and handle optional error return
-			out := pv.Call(in)
+
+			// call original provider with resolved args
+			out := pv.Call(args)
 			if len(out) == 2 && !out[1].IsNil() {
+
 				panic(out[1].Interface())
 			}
+
 			return out[0].Interface()
 		}
 		// Provider returns the first result type
 		pe.providerType = pt.Out(0)
 	} else {
+
 		// Static instance provider
-		pe.factory = func() interface{} { return provider }
+		pe.factory = func(_ ...interface{}) interface{} {
+			return provider
+		}
 		pe.providerType = reflect.TypeOf(provider)
 	}
 
