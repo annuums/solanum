@@ -61,7 +61,7 @@ func TestControllersAndDependencies(t *testing.T) {
 
 	// Controller registration
 	ctrl := solanum.NewController()
-	ctrl.SetHandlers(solanum.SolaService{Uri: "/a", Method: http.MethodGet, Handler: func(c *gin.Context) {}})
+	ctrl.SetHandlers(&solanum.SolaService{Uri: "/a", Method: http.MethodGet, Handler: func(c *gin.Context) {}})
 	m.SetControllers(ctrl)
 	assert.Len(t, m.Controllers(), 1)
 
@@ -79,7 +79,7 @@ func TestSetRoutesWithoutDependencies(t *testing.T) {
 
 	m := solanum.NewModule("/api")
 	ctrl := solanum.NewController()
-	ctrl.SetHandlers(solanum.SolaService{Uri: "/ping", Method: "GET", Handler: func(c *gin.Context) { c.String(http.StatusOK, "ok") }})
+	ctrl.SetHandlers(&solanum.SolaService{Uri: "/ping", Method: "GET", Handler: func(c *gin.Context) { c.String(http.StatusOK, "ok") }})
 	m.SetControllers(ctrl)
 	// Register module routes without dependencies
 	m.SetRoutes(r.Group("/api"))
@@ -104,7 +104,7 @@ func TestSetRoutesWithDependencies(t *testing.T) {
 
 	// Handler uses injected service
 	ctrl := solanum.NewController()
-	ctrl.SetHandlers(solanum.SolaService{
+	ctrl.SetHandlers(&solanum.SolaService{
 		Uri:    "/dep",
 		Method: "GET",
 		Handler: func(c *gin.Context) {
