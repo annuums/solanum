@@ -59,11 +59,11 @@ func (server *runner) ValidateDependencies() error {
 func (server *runner) Run() {
 	addr := fmt.Sprintf(":%v", server.port)
 
-	SolanumRunner.InitModules()
-
 	if err := server.ValidateDependencies(); err != nil {
 		log.Fatalf("❌ Dependency check failed: %v", err)
 	}
+
+	SolanumRunner.InitModules()
 
 	log.Println("Solanum is running on ", addr)
 	server.Engine.Run(addr)
