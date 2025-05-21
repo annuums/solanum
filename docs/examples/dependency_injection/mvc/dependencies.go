@@ -9,8 +9,10 @@ import (
 )
 
 func RegisterDependencies() {
+
+	// Register a singleton database connection
 	solanum.Register("db", func() *sql.DB {
-		dsn := "postgres://postgres:postgres@localhost:5432/annuums?sslmode=disable"
+		dsn := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 		db, err := sql.Open("postgres", dsn)
 		if err != nil {
 			panic(fmt.Errorf("db open: %w", err))
@@ -18,7 +20,14 @@ func RegisterDependencies() {
 		return db
 	}, solanum.WithSingleton())
 
-	solanum.Register("userRepository", func(db *sql.DB) user.UserRepository {
-		return &user.UserRepoImpl{DB: db}
-	}, solanum.WithTransient(), solanum.As((*user.UserRepository)(nil)))
+	// Register a transient user repository
+	solanum.Register(
+		"userRepository",
+		func(db *sql.DB) user.UserRepository {
+			return &user.UserRepoImpl{DB: db}
+		},
+		solanum.WithTransient(),
+		solanum.As((*user.UserRepository)(nil)),
+		solanum.WithDep[*sql.DB]("db"), // Declare *sql.DB dependency to find it in the container with key "db"
+	)
 }
