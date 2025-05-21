@@ -1,6 +1,7 @@
 package solanum_test
 
 import (
+	"github.com/annuums/solanum/util"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -31,8 +32,8 @@ func TestCorsIntegration(t *testing.T) {
 	// Should not panic
 	assert.NotPanics(t, func() {
 		app.Cors(
-			solanum.WithUrls([]string{"*"}),
-			solanum.WithMethods([]string{"GET"}),
+			util.WithUrls([]string{"*"}),
+			util.WithMethods([]string{"GET"}),
 		)
 	})
 }

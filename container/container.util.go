@@ -1,4 +1,4 @@
-package solanum
+package container
 
 import (
 	"github.com/gin-gonic/gin"
@@ -21,11 +21,11 @@ func GetDependency[T any](c *gin.Context, key string) T {
 // Dep creates a DependencyConfig for type T against the specified key.
 // It uses a pointer-to-T to obtain the reflect.Type of T and returns
 // a DependencyConfig that can be passed to Module.SetDependencies.
-func Dep[T any](key string) DependencyConfig {
+func Dep[T any](key string) *DependencyConfig {
 	// Create a nil pointer of type *T so that reflect.TypeOf(ptr).Elem()
 	// yields the reflect.Type representing T.
 	var ptr *T
-	return DependencyConfig{
+	return &DependencyConfig{
 		Key:  key,
 		Type: reflect.TypeOf(ptr).Elem(),
 	}

@@ -1,4 +1,4 @@
-package solanum
+package container
 
 import (
 	"fmt"
@@ -6,43 +6,62 @@ import (
 	"sync"
 )
 
-// providerEntry represents a registration record for a service provider.
-// It stores the factory function, lifecycle (singleton or transient),
-// any initialized instance, initialization hook, and type metadata.
-type providerEntry struct {
-	// factory constructs a new instance of the provider.
-	factory func(...interface{}) interface{}
+const (
+	// DependencyPrefix is the prefix used in Gin context keys for injected dependencies.
+	DependencyPrefix = "__sol_dep__"
+)
 
-	// singleton indicates whether to reuse the same instance across resolves.
-	singleton bool
+type (
 
-	// instance holds the created singleton instance after first resolution.
-	instance interface{}
+	// DependencyConfig defines a key and Go type for a dependency to be injected into handlers.
+	DependencyConfig struct {
+		// Key identifier used when registering and retrieving the dependency
+		// registration key for the dependency
+		Key string
 
-	// hookCalled tracks if the initHook has already been executed.
-	hookCalled bool
+		// Type reflect.Type of the interface or concrete type to resolve
+		// expected reflect.Type for resolution
+		Type reflect.Type
+	}
 
-	// initHook is an optional callback that runs once after creating the instance.
-	initHook func(interface{})
+	// providerEntry represents a registration record for a service provider.
+	// It stores the factory function, lifecycle (singleton or transient),
+	// any initialized instance, initialization hook, and type metadata.
+	providerEntry struct {
+		// factory constructs a new instance of the provider.
+		factory func(...interface{}) interface{}
 
-	// interfaceType, if non-nil, registers this provider under a Go interface type.
-	interfaceType reflect.Type
+		// singleton indicates whether to reuse the same instance across resolves.
+		singleton bool
 
-	// providerType is the concrete type returned by the factory or provided directly.
-	providerType reflect.Type
+		// instance holds the created singleton instance after first resolution.
+		instance interface{}
 
-	// deps holds the dependencies of the provider, if any.
-	deps []DependencyConfig
-}
+		// hookCalled tracks if the initHook has already been executed.
+		hookCalled bool
 
-// container is the internal DI container managing provider registrations
-// and type-to-key mappings. It is safe for concurrent use.
-type container struct {
-	mu           sync.RWMutex              // protects all maps below
-	providers    map[string]*providerEntry // key -> providerEntry
-	interfaceMap map[reflect.Type]string   // interface type -> key
-	typeMap      map[reflect.Type]string   // concrete type -> key
-}
+		// initHook is an optional callback that runs once after creating the instance.
+		initHook func(interface{})
+
+		// interfaceType, if non-nil, registers this provider under a Go interface type.
+		interfaceType reflect.Type
+
+		// providerType is the concrete type returned by the factory or provided directly.
+		providerType reflect.Type
+
+		// deps holds the dependencies of the provider, if any.
+		deps []DependencyConfig
+	}
+
+	// container is the internal DI container managing provider registrations
+	// and type-to-key mappings. It is safe for concurrent use.
+	container struct {
+		mu           sync.RWMutex              // protects all maps below
+		providers    map[string]*providerEntry // key -> providerEntry
+		interfaceMap map[reflect.Type]string   // interface type -> key
+		typeMap      map[reflect.Type]string   // concrete type -> key
+	}
+)
 
 // globalContainer is the shared, package-level DI container instance.
 var globalContainer = &container{

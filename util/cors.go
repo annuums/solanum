@@ -1,6 +1,20 @@
-package solanum
+package util
 
-import "log"
+import (
+	"log"
+	"strings"
+)
+
+// Default CORS settings
+var (
+	CorsDefaultMethods      = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
+	CorsDefaultHeaders      = []string{"Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
+	CorsDefaultCredentials  = false
+	CorsDefaultOriginalFunc = func(origin string) bool {
+		// Default origin function allows any localhost origin
+		return strings.Contains(origin, "://localhost")
+	}
+)
 
 // CorsOption defines configuration settings for Cross-Origin Resource Sharing (CORS).
 type CorsOption struct {

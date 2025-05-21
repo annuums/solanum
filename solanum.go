@@ -2,9 +2,10 @@ package solanum
 
 import (
 	"fmt"
+	"github.com/annuums/solanum/container"
+	"github.com/annuums/solanum/util"
 	"log"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -14,29 +15,13 @@ import (
 // SolanumRunner holds the global Runner instance used to configure and start the server.
 var SolanumRunner Runner
 
-// Default CORS settings
-var (
-	CorsDefaultMethods      = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
-	CorsDefaultHeaders      = []string{"Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"}
-	CorsDefaultCredentials  = false
-	CorsDefaultOriginalFunc = func(origin string) bool {
-		// Default origin function allows any localhost origin
-		return strings.Contains(origin, "://localhost")
-	}
-)
-
-const (
-	// DependencyPrefix is the prefix used in Gin context keys for injected dependencies.
-	DependencyPrefix = "__sol_dep__"
-)
-
 // ValidateDependencies checks all registered modules for their dependencies.
 func (server *runner) ValidateDependencies() error {
 	for _, mPtr := range server.modules {
 
-		for _, dep := range (*mPtr).Dependencies() {
+		for _, dep := range *(*mPtr).Dependencies() {
 
-			inst, err := Resolve(dep.Key)
+			inst, err := container.Resolve(dep.Key)
 			if err != nil {
 				return fmt.Errorf(
 					"dependency validation failed for key=%q :: %w",
@@ -130,8 +115,8 @@ func (server *runner) InitGlobalMiddlewares() {
 
 // Cors applies configured CORS settings to the Gin engine using the cors middleware.
 // Accepts functional options for customizing allowed origins, methods, headers, etc.
-func (server *runner) Cors(opts ...func(*CorsOption)) {
-	options := CorsOptions(opts...)
+func (server *runner) Cors(opts ...func(*util.CorsOption)) {
+	options := util.CorsOptions(opts...)
 
 	server.Engine.Use(
 		cors.New(

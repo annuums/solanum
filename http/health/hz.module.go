@@ -1,18 +1,19 @@
-package solanum
+package health
 
 import (
+	"github.com/annuums/solanum"
 	"github.com/gin-gonic/gin"
 	"log"
 	"sync"
 )
 
-var healthCheckModule *SolaModule
+var healthCheckModule *solanum.SolaModule
 var hzOnce sync.Once
 
-func NewHealthCheckModule(uri string) *SolaModule {
+func NewHealthCheckModule(uri string) *solanum.SolaModule {
 	hzOnce.Do(func() {
 		if healthCheckModule == nil {
-			healthCheckModule = NewModule(uri)
+			healthCheckModule = solanum.NewModule(uri)
 			attachControllers()
 			setPreMiddlewares()
 			setPostMiddlewares()

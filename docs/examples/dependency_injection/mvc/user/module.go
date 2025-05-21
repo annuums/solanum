@@ -2,6 +2,7 @@ package user
 
 import (
 	"github.com/annuums/solanum"
+	"github.com/annuums/solanum/container"
 	"sync"
 )
 
@@ -26,6 +27,6 @@ func attachControllers() {
 
 	module.SetControllers(ctr)
 	module.SetDependencies(
-		solanum.Dep[UserRepository]("userRepository"),
+		*container.Dep[UserRepository]("userRepository"),
 	)
 }

@@ -1,13 +1,12 @@
 package solanum_test
 
 import (
+	"github.com/annuums/solanum/container"
 	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-
-	solanum "github.com/annuums/solanum"
 )
 
 func init() {
@@ -17,7 +16,7 @@ func init() {
 
 // TestDep ensures that Dep constructs the correct DependencyConfig for type T.
 func TestDep(t *testing.T) {
-	dc := solanum.Dep[int]("intKey")
+	dc := container.Dep[int]("intKey")
 	assert.Equal(t, "intKey", dc.Key)
 	assert.Equal(t, reflect.TypeOf(0), dc.Type)
 }
@@ -28,11 +27,11 @@ func TestGetDependency(t *testing.T) {
 	tc := &gin.Context{}
 
 	// Manually set a dependency in context
-	tc.Set(solanum.DependencyPrefix+"foo", "bar")
-	val := solanum.GetDependency[string](tc, "foo")
+	tc.Set(container.DependencyPrefix+"foo", "bar")
+	val := container.GetDependency[string](tc, "foo")
 	assert.Equal(t, "bar", val)
 
 	// Missing key returns zero of type
-	zero := solanum.GetDependency[bool](tc, "missing")
+	zero := container.GetDependency[bool](tc, "missing")
 	assert.False(t, zero)
 }
