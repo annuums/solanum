@@ -3,6 +3,7 @@ package solanum
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"time"
 
@@ -35,19 +36,39 @@ func (server *runner) ValidateDependencies() error {
 
 		for _, dep := range (*mPtr).Dependencies() {
 
-			var err error
-			if dep.Type != nil {
-
-				_, err = ResolveByType(dep.Key, dep.Type)
-			} else {
-
-				_, err = Resolve(dep.Key)
+			inst, err := Resolve(dep.Key)
+			if err != nil {
+				return fmt.Errorf(
+					"dependency validation failed for key=%q :: %w",
+					dep.Key,
+					err,
+				)
 			}
 
-			if err != nil {
+			if dep.Type != nil {
 
-				return fmt.Errorf("dependency validation failed for key=%q type=%v: %w",
-					dep.Key, dep.Type, err)
+				instType := reflect.TypeOf(inst)
+
+				switch dep.Type.Kind() {
+				case reflect.Interface:
+
+					if !instType.Implements(dep.Type) {
+
+						return fmt.Errorf(
+							"dependency %q: instance type %v does not implement %v",
+							dep.Key,
+							instType,
+							dep.Type,
+						)
+					}
+
+				default:
+
+					if !instType.AssignableTo(dep.Type) {
+
+						return fmt.Errorf("dependnecy %q: instance type %T not assignable to %v", dep.Key, instType, dep.Type)
+					}
+				}
 			}
 		}
 	}
