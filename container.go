@@ -2,7 +2,6 @@ package solanum
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"sync"
 )
@@ -123,8 +122,6 @@ func Register(key string, provider interface{}, opts ...RegisterOption) {
 			})
 		}
 	}
-
-	log.Printf("deps :: %v\n", deps)
 
 	// If provider is a function, wrap it to perform nested dependency resolution
 	if pt.Kind() == reflect.Func {

@@ -3,7 +3,6 @@ package solanum
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
 )
 
 type (
@@ -136,7 +135,7 @@ func diMiddleware(deps []DependencyConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		seen := make(map[string]struct{}, len(deps))
 		for _, d := range deps {
-			log.Printf("key :: %v, interface :: %v", d.Key, d.Type)
+
 			if _, dup := seen[d.Key]; dup {
 				panic(fmt.Sprintf("duplicate dependency key: %q", d.Key))
 			}
