@@ -66,7 +66,7 @@ func (server *runner) ValidateDependencies() error {
 
 					if !instType.AssignableTo(dep.Type) {
 
-						return fmt.Errorf("dependnecy %q: instance type %T not assignable to %v", dep.Key, instType, dep.Type)
+						return fmt.Errorf("dependency %q: instance type %T not assignable to %v", dep.Key, instType, dep.Type)
 					}
 				}
 			}
