@@ -29,11 +29,35 @@ const (
 	DependencyPrefix = "__sol_dep__"
 )
 
+// ValidateDependencies checks all registered modules for their dependencies.
+func (server *runner) ValidateDependencies() error {
+	for _, mPtr := range server.modules {
+		m := *mPtr
+		for _, dep := range m.Dependencies() {
+			var err error
+			if dep.Type != nil {
+				_, err = ResolveByType(dep.Key, dep.Type)
+			} else {
+				_, err = Resolve(dep.Key)
+			}
+			if err != nil {
+				return fmt.Errorf("dependency validation failed for key=%q type=%v: %w",
+					dep.Key, dep.Type, err)
+			}
+		}
+	}
+	return nil
+}
+
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 	addr := fmt.Sprintf(":%v", server.port)
 
 	SolanumRunner.InitModules()
+
+	if err := server.ValidateDependencies(); err != nil {
+		log.Fatalf("❌ Dependency check failed: %v", err)
+	}
 
 	log.Println("Solanum is running on ", addr)
 	server.Engine.Run(addr)
