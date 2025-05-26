@@ -233,14 +233,19 @@ func (c *container) resolveByReflectType(t reflect.Type) (interface{}, error) {
 // Resolve retrieves an instance by key. For singletons, it reuses the instance.
 // If an init hook is defined, it will be called exactly once.
 func Resolve(key string) (interface{}, error) {
+
 	globalContainer.mu.RLock()
 	pe, ok := globalContainer.providers[key]
 	if !ok {
+
 		globalContainer.mu.RUnlock()
 		return nil, fmt.Errorf("no provider registered for key %s", key)
 	}
-	// Return existing singleton if already initialized and hook called
-	if pe.singleton && pe.instance != nil && pe.hookCalled {
+
+	// Return existing singleton if already initialized
+	//   This check is necessary to avoid calling the initHook multiple times
+	if pe.singleton && pe.instance != nil {
+
 		inst := pe.instance
 		globalContainer.mu.RUnlock()
 		return inst, nil
@@ -251,6 +256,7 @@ func Resolve(key string) (interface{}, error) {
 	inst := pe.factory()
 	// Store singleton instance if applicable
 	if pe.singleton {
+
 		globalContainer.mu.Lock()
 		if pe.instance == nil {
 			pe.instance = inst
@@ -260,16 +266,21 @@ func Resolve(key string) (interface{}, error) {
 
 	// Invoke init hook once
 	if pe.initHook != nil {
+
 		globalContainer.mu.Lock()
 		already := pe.hookCalled
 		if !already {
+
 			pe.hookCalled = true
 		}
+
 		globalContainer.mu.Unlock()
 		if !already {
+
 			pe.initHook(inst)
 		}
 	}
+
 	return inst, nil
 }
 
