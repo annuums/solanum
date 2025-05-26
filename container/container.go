@@ -230,46 +230,62 @@ func (c *container) resolveByReflectType(t reflect.Type) (interface{}, error) {
 	return nil, fmt.Errorf("no provider for type %v", t)
 }
 
-// Resolve retrieves an instance by key. For singletons, it reuses the instance.
-// If an init hook is defined, it will be called exactly once.
+// Resolve retrieves an instance registered under the given key.
+//   - If the provider is a singleton and has already been constructed, it returns the stored instance.
+//   - Otherwise, it invokes the factory (outside any locks), stores the instance if singleton,
+//     and calls initHook exactly once (also outside the read-lock).
 func Resolve(key string) (interface{}, error) {
+
 	globalContainer.mu.RLock()
-	pe, ok := globalContainer.providers[key]
-	if !ok {
+	pe, exists := globalContainer.providers[key]
+	if !exists {
+
 		globalContainer.mu.RUnlock()
-		return nil, fmt.Errorf("no provider registered for key %s", key)
+		return nil, fmt.Errorf("no provider registered for key %q", key)
 	}
-	// Return existing singleton if already initialized and hook called
-	if pe.singleton && pe.instance != nil && pe.hookCalled {
-		inst := pe.instance
-		globalContainer.mu.RUnlock()
-		return inst, nil
-	}
+
+	isSingleton := pe.singleton
+	existing := pe.instance
 	globalContainer.mu.RUnlock()
 
-	// Create a new instance via factory
+	// Return existing instance if already created.
+	if isSingleton && existing != nil {
+
+		return existing, nil
+	}
+
+	// Build the instance outside of any locks to avoid deadlocks.
 	inst := pe.factory()
-	// Store singleton instance if applicable
-	if pe.singleton {
+	if isSingleton {
+
 		globalContainer.mu.Lock()
 		if pe.instance == nil {
+
 			pe.instance = inst
 		}
+
 		globalContainer.mu.Unlock()
 	}
 
-	// Invoke init hook once
+	var doHook bool
 	if pe.initHook != nil {
+
 		globalContainer.mu.Lock()
-		already := pe.hookCalled
-		if !already {
+		if !pe.hookCalled {
+
 			pe.hookCalled = true
+			doHook = true
 		}
+
 		globalContainer.mu.Unlock()
-		if !already {
+
+		// Call the hook without holding any locks.
+		if doHook {
+
 			pe.initHook(inst)
 		}
 	}
+
 	return inst, nil
 }
 
