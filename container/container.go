@@ -242,29 +242,28 @@ func Resolve(key string) (interface{}, error) {
 		return nil, fmt.Errorf("no provider registered for key %s", key)
 	}
 
-	// Return existing singleton if already initialized
-	//   This check is necessary to avoid calling the initHook multiple times
-	if pe.singleton && pe.instance != nil {
-
-		inst := pe.instance
-		globalContainer.mu.RUnlock()
-		return inst, nil
-	}
+	isSingleton := pe.singleton
+	existing := pe.instance
+	hookDone := pe.hookCalled
 	globalContainer.mu.RUnlock()
 
-	// Create a new instance via factory
+	if isSingleton && existing != nil {
+
+		return existing, nil
+	}
+
 	inst := pe.factory()
-	// Store singleton instance if applicable
-	if pe.singleton {
+	if isSingleton {
 
 		globalContainer.mu.Lock()
 		if pe.instance == nil {
+
 			pe.instance = inst
 		}
+
 		globalContainer.mu.Unlock()
 	}
 
-	// Invoke init hook once
 	if pe.initHook != nil {
 
 		globalContainer.mu.Lock()
@@ -275,7 +274,8 @@ func Resolve(key string) (interface{}, error) {
 		}
 
 		globalContainer.mu.Unlock()
-		if !already {
+
+		if !hookDone && !already {
 
 			pe.initHook(inst)
 		}
