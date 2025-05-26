@@ -230,28 +230,31 @@ func (c *container) resolveByReflectType(t reflect.Type) (interface{}, error) {
 	return nil, fmt.Errorf("no provider for type %v", t)
 }
 
-// Resolve retrieves an instance by key. For singletons, it reuses the instance.
-// If an init hook is defined, it will be called exactly once.
+// Resolve retrieves an instance registered under the given key.
+//   - If the provider is a singleton and has already been constructed, it returns the stored instance.
+//   - Otherwise, it invokes the factory (outside any locks), stores the instance if singleton,
+//     and calls initHook exactly once (also outside the read-lock).
 func Resolve(key string) (interface{}, error) {
 
 	globalContainer.mu.RLock()
-	pe, ok := globalContainer.providers[key]
-	if !ok {
+	pe, exists := globalContainer.providers[key]
+	if !exists {
 
 		globalContainer.mu.RUnlock()
-		return nil, fmt.Errorf("no provider registered for key %s", key)
+		return nil, fmt.Errorf("no provider registered for key %q", key)
 	}
 
 	isSingleton := pe.singleton
 	existing := pe.instance
-	hookDone := pe.hookCalled
 	globalContainer.mu.RUnlock()
 
+	// Return existing instance if already created.
 	if isSingleton && existing != nil {
 
 		return existing, nil
 	}
 
+	// Build the instance outside of any locks to avoid deadlocks.
 	inst := pe.factory()
 	if isSingleton {
 
@@ -264,18 +267,20 @@ func Resolve(key string) (interface{}, error) {
 		globalContainer.mu.Unlock()
 	}
 
+	var doHook bool
 	if pe.initHook != nil {
 
 		globalContainer.mu.Lock()
-		already := pe.hookCalled
-		if !already {
+		if !pe.hookCalled {
 
 			pe.hookCalled = true
+			doHook = true
 		}
 
 		globalContainer.mu.Unlock()
 
-		if !hookDone && !already {
+		// Call the hook without holding any locks.
+		if doHook {
 
 			pe.initHook(inst)
 		}
