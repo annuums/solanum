@@ -163,7 +163,7 @@ func diMiddleware(deps *[]*container.DependencyConfig) gin.HandlerFunc {
 				panic(fmt.Errorf("failed to resolve %q: %w", d.Key, err))
 			}
 
-			ctx = context.WithValue(ctx, container.ContextKey{SolanumDepKey: d.Key}, inst)
+			ctx = context.WithValue(ctx, container.NewContextKey(d.Key), inst)
 		}
 
 		c.Request = c.Request.WithContext(ctx)
