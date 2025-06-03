@@ -17,12 +17,14 @@ var SolanumRunner Runner
 
 // ValidateDependencies checks all registered modules for their dependencies.
 func (server *runner) ValidateDependencies() error {
+
 	for _, mPtr := range server.modules {
 
 		for _, dep := range *(*mPtr).Dependencies() {
 
 			inst, err := container.Resolve(dep.Key)
 			if err != nil {
+
 				return fmt.Errorf(
 					"dependency validation failed for key=%q :: %w",
 					dep.Key,
@@ -51,7 +53,13 @@ func (server *runner) ValidateDependencies() error {
 
 					if !instType.AssignableTo(dep.Type) {
 
-						return fmt.Errorf("dependency %q: instance type %T not assignable to %v", dep.Key, instType, dep.Type)
+						// If the instance type is not assignable to the dependency type,
+						return fmt.Errorf(
+							"dependency %q: instance type %v not assignable to %v",
+							dep.Key,
+							instType,
+							dep.Type,
+						)
 					}
 				}
 			}
