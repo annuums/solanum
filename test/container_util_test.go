@@ -28,10 +28,10 @@ func TestGetDependency(t *testing.T) {
 
 	// Manually set a dependency in context
 	tc.Set(container.DependencyPrefix+"foo", "bar")
-	val := container.GetDependency[string](tc, "foo")
+	val := container.DepFromContext[string](tc, "foo")
 	assert.Equal(t, "bar", val)
 
 	// Missing key returns zero of type
-	zero := container.GetDependency[bool](tc, "missing")
+	zero := container.DepFromContext[bool](tc, "missing")
 	assert.False(t, zero)
 }

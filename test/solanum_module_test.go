@@ -109,7 +109,7 @@ func TestSetRoutesWithDependencies(t *testing.T) {
 		Uri:    "/dep",
 		Method: "GET",
 		Handler: func(c *gin.Context) {
-			d := container.GetDependency[FooService](c, "foo")
+			d := container.DepFromContext[FooService](c, "foo")
 			c.String(http.StatusOK, d.Foo())
 		},
 	})

@@ -9,7 +9,21 @@ import (
 // It looks up the value under the key composed of DependencyPrefix + key.
 // If the value exists, it casts it to the requested generic type T and returns it.
 // Otherwise, it returns the zero value for type T.
+// Deprecated: This function is deprecated and will be removed in future versions. Use DepFromContext instead.
 func GetDependency[T any](c *gin.Context, key string) T {
+	dependencyKey := DependencyPrefix + key
+	if v, ok := c.Get(dependencyKey); ok {
+		return v.(T)
+	}
+	var zero T
+	return zero
+}
+
+// DepFromContext retrieves a previously injected dependency from the Gin context.
+// It looks up the value under the key composed of DependencyPrefix + key.
+// If the value exists, it casts it to the requested generic type T and returns it.
+// Otherwise, it returns the zero value for type T.
+func DepFromContext[T any](c *gin.Context, key string) T {
 	dependencyKey := DependencyPrefix + key
 	if v, ok := c.Get(dependencyKey); ok {
 		return v.(T)
