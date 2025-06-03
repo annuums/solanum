@@ -200,7 +200,7 @@ func NewSolanum(opts ...option) Runner {
 
 	port := SolanumRunner.Port()
 
-	if &port == nil {
+	if port == 0 {
 
 		log.Println("⚠️ No port specified, using default port 0 (random port).")
 		port = 0
