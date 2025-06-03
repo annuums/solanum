@@ -44,14 +44,35 @@ func DepFromContext[T any](ctx context.Context, key string) T {
 	return zero
 }
 
+// DepFromGinContext retrieves a previously injected dependency from the Gin context.
 func DepFromGinContext[T any](c *gin.Context, key string) T {
 	return DepFromContext[T](c.Request.Context(), key)
 }
 
-// Dep creates a DependencyConfig for type T against the specified key.
+// Dep retrieves a previously injected dependency from the global container.
+func Dep[T any](key string) T {
+
+	config := DepConfig[T](key)
+
+	// Use ResolveByType to enforce that the instance implements or is assignable to T
+	inst, err := ResolveByType(key, config.Type)
+	if err != nil {
+		panic(err)
+	}
+
+	// Perform a type assertion to T
+	if v, ok := inst.(T); ok {
+		return v
+	}
+
+	// If we reach here, the instance was found but does not match T
+	panic("dependency type mismatch: could not cast resolved instance to " + config.Type.String())
+}
+
+// DepConfig creates a DependencyConfig for type T against the specified key.
 // It uses a pointer-to-T to obtain the reflect.Type of T and returns
 // a DependencyConfig that can be passed to Module.SetDependencies.
-func Dep[T any](key string) *DependencyConfig {
+func DepConfig[T any](key string) *DependencyConfig {
 	// Create a nil pointer of type *T so that reflect.TypeOf(ptr).Elem()
 	// yields the reflect.Type representing T.
 	var ptr *T

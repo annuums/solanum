@@ -14,7 +14,9 @@ var (
 func NewModule(uri string) *solanum.SolaModule {
 	once.Do(func() {
 		if module == nil {
-			module = solanum.NewModule(uri)
+			module = solanum.NewModule(
+				solanum.WithUri(uri),
+			)
 			attachControllers()
 		}
 	})
@@ -27,6 +29,6 @@ func attachControllers() {
 
 	module.SetControllers(ctr)
 	module.SetDependencies(
-		*container.Dep[UserRepository]("userRepository"),
+		*container.DepConfig[UserRepository]("userRepository"),
 	)
 }

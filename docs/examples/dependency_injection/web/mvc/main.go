@@ -9,7 +9,9 @@ func main() {
 
 	RegisterDependencies()
 
-	app := *solanum.NewSolanum(5050)
+	app := solanum.NewSolanum(
+		solanum.WithPort(5050),
+	)
 	app.SetModules(
 		user.NewModule(""),
 	)
