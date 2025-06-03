@@ -41,21 +41,64 @@ type (
 	// It holds the Gin engine, listening port, and registered modules.
 	runner struct {
 		Engine  *gin.Engine // underlying Gin engine
-		port    int         // TCP port to listen on
+		port    *int        // TCP port to listen on
 		modules []*Module   // pointers to registered modules
 	}
 )
 
+type moduleOption func(*SolaModule) error
+
+func WithUri(uri string) moduleOption {
+	return func(m *SolaModule) error {
+
+		m.uri = uri
+		return nil
+	}
+}
+
+func WithDependency(dep *container.DependencyConfig) moduleOption {
+
+	return func(m *SolaModule) error {
+
+		if m.dependencies == nil {
+			m.dependencies = &[]*container.DependencyConfig{}
+		}
+
+		// Ensure the dependency is not already registered
+		for _, d := range *m.dependencies {
+
+			if d.Key == dep.Key {
+
+				return fmt.Errorf("dependency %q already registered", dep.Key)
+			}
+		}
+
+		*m.dependencies = append(*m.dependencies, dep)
+		return nil
+	}
+}
+
 // NewModule creates a new SolaModule with the given URI prefix.
 // The module starts with empty controller, middleware, and dependency lists.
-func NewModule(uri string) *SolaModule {
-	return &SolaModule{
-		uri:             uri,
+func NewModule(opts ...moduleOption) *SolaModule {
+
+	module := &SolaModule{
 		controllers:     []Controller{},
 		preMiddlewares:  []gin.HandlerFunc{},
 		postMiddlewares: []gin.HandlerFunc{},
 		dependencies:    &[]*container.DependencyConfig{},
 	}
+
+	// functional options pattern to configure the module
+	for _, opt := range opts {
+
+		if err := opt(&SolaModule{}); err != nil {
+
+			panic(fmt.Sprintf("failed to apply module option :: %v", err))
+		}
+	}
+
+	return module
 }
 
 // PreMiddlewares returns the list of middleware to execute before handlers.

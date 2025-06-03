@@ -71,16 +71,31 @@ func (server *runner) ValidateDependencies() error {
 
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
-	addr := fmt.Sprintf(":%v", server.port)
 
-	if err := server.ValidateDependencies(); err != nil {
-		log.Fatalf("❌ Dependency check failed: %v", err)
+	log.Printf(" server port :: %d\n", server.Port())
+
+	if server.port == nil {
+
+		log.Fatalln("❌ Server port is not configured. Please set a port before running.")
 	}
 
-	SolanumRunner.InitModules()
+	// Start Gin Server
+	if server.Port() != 0 {
 
-	log.Println("Solanum is running on ", addr)
-	server.Engine.Run(addr)
+		addr := fmt.Sprintf(":%d", *server.port)
+
+		if err := server.ValidateDependencies(); err != nil {
+			log.Fatalf("❌ Dependency check failed: %v", err)
+		}
+
+		SolanumRunner.InitModules()
+
+		log.Println("Solanum is running on ", addr)
+		if err := server.Engine.Run(addr); err != nil {
+
+			log.Fatalf("❌ Failed to start server on %s: %v", addr, err)
+		}
+	}
 }
 
 // InitModules sets up routing groups for each Module and applies their routes.
@@ -145,17 +160,65 @@ func (server *runner) GinEngine() *gin.Engine {
 	return server.Engine
 }
 
+// Port returns the configured port for the HTTP server.
+func (server *runner) Port() int {
+
+	if server.port == nil {
+
+		return 0
+	}
+
+	return *server.port
+}
+
+type option func(Runner)
+
+func WithPort(port int) option {
+	return func(r Runner) {
+		if runner, ok := r.(*runner); ok {
+			runner.port = &port
+		} else {
+			log.Println("⚠️ Unable to set port: Runner is not of type *runner")
+		}
+	}
+}
+
 // NewSolanum creates (once) and returns the global Runner configured for the given port.
 // It ensures global middlewares are initialized. Subsequent calls return the same Runner.
-func NewSolanum(port int) *Runner {
+func NewSolanum(opts ...option) Runner {
+
 	if SolanumRunner == nil {
-		SolanumRunner = &runner{
-			Engine: gin.New(),
-			port:   port,
+
+		SolanumRunner = &runner{}
+	}
+
+	for _, opt := range opts {
+
+		if opt != nil {
+			opt(SolanumRunner)
 		}
 	}
 
-	SolanumRunner.InitGlobalMiddlewares()
+	port := SolanumRunner.Port()
 
-	return &SolanumRunner
+	if &port == nil {
+
+		log.Println("⚠️ No port specified, using default port 0 (random port).")
+		port = 0
+	}
+
+	if port == 0 {
+
+		SolanumRunner = &runner{}
+	} else {
+		
+		SolanumRunner = &runner{
+			Engine: gin.New(),
+			port:   &port,
+		}
+
+		SolanumRunner.InitGlobalMiddlewares()
+	}
+
+	return SolanumRunner
 }
