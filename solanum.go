@@ -72,7 +72,10 @@ func (server *runner) ValidateDependencies() error {
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 
-	log.Printf(" server port :: %d\n", server.Port())
+	if err := server.ValidateDependencies(); err != nil {
+
+		log.Fatalf("❌ Dependency check failed: %v", err)
+	}
 
 	if server.port == nil {
 
@@ -82,15 +85,11 @@ func (server *runner) Run() {
 	// Start Gin Server
 	if server.Port() != 0 {
 
-		addr := fmt.Sprintf(":%d", *server.port)
-
-		if err := server.ValidateDependencies(); err != nil {
-			log.Fatalf("❌ Dependency check failed: %v", err)
-		}
-
 		SolanumRunner.InitModules()
 
+		addr := fmt.Sprintf(":%d", *server.port)
 		log.Println("Solanum is running on ", addr)
+
 		if err := server.Engine.Run(addr); err != nil {
 
 			log.Fatalf("❌ Failed to start server on %s: %v", addr, err)
@@ -211,7 +210,7 @@ func NewSolanum(opts ...option) Runner {
 
 		SolanumRunner = &runner{}
 	} else {
-		
+
 		SolanumRunner = &runner{
 			Engine: gin.New(),
 			port:   &port,

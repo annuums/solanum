@@ -2,6 +2,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"reflect"
 )
@@ -52,10 +53,22 @@ func DepFromGinContext[T any](c *gin.Context, key string) T {
 // Dep retrieves a previously injected dependency from the global container.
 func Dep[T any](key string) T {
 
-	config := DepConfig[T](key)
+	var ptr *T
+	tType := reflect.TypeOf(ptr).Elem()
 
-	// Use ResolveByType to enforce that the instance implements or is assignable to T
-	inst, err := ResolveByType(key, config.Type)
+	var inst interface{}
+	var err error
+
+	if tType.Kind() == reflect.Interface {
+
+		// If T is an interface, ensure the resolved instance implements it
+		inst, err = ResolveByType(key, tType)
+	} else {
+
+		// Otherwise, resolve by key and assert the concrete type later
+		inst, err = Resolve(key)
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -65,8 +78,11 @@ func Dep[T any](key string) T {
 		return v
 	}
 
-	// If we reach here, the instance was found but does not match T
-	panic("dependency type mismatch: could not cast resolved instance to " + config.Type.String())
+	// The instance was found but does not match T
+	panic(fmt.Sprintf(
+		"dependency type mismatch :: resolved instance for key %q is %T, not %v",
+		key, inst, tType,
+	))
 }
 
 // DepConfig creates a DependencyConfig for type T against the specified key.

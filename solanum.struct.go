@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/annuums/solanum/container"
 	"github.com/gin-gonic/gin"
+	"reflect"
 )
 
 type (
@@ -56,23 +57,77 @@ func WithUri(uri string) moduleOption {
 	}
 }
 
+// WithDependency registers a DependencyConfig with the module, but only if
+// that key is actually registered in the global container and its type matches.
+// Returns an error if the key is missing in the container or if the types don’t align.
 func WithDependency(dep *container.DependencyConfig) moduleOption {
 
 	return func(m *SolaModule) error {
 
+		// Initialize the module’s dependency slice if nil
 		if m.dependencies == nil {
 			m.dependencies = &[]*container.DependencyConfig{}
 		}
 
-		// Ensure the dependency is not already registered
+		// Check for duplicate Key in this module
 		for _, d := range *m.dependencies {
 
 			if d.Key == dep.Key {
 
-				return fmt.Errorf("dependency %q already registered", dep.Key)
+				return fmt.Errorf("dependency %q already registered in this module", dep.Key)
 			}
 		}
 
+		// Validate that the container actually has a provider for dep.Key,
+		// and that it matches dep.Type (if dep.Type is non-nil).
+		// If dep.Type is an interface, use ResolveByType to enforce implementation.
+		// Otherwise, use Resolve and check AssignableTo (or Implemen ts) manually.
+
+		if dep.Type != nil && dep.Type.Kind() == reflect.Interface {
+
+			// Ensure an instance can be resolved and implements dep.Type
+			inst, err := container.ResolveByType(dep.Key, dep.Type)
+			if err != nil {
+
+				return fmt.Errorf(
+					"cannot register dependency %q: failed to resolve implementation for interface %v: %w",
+					dep.Key, dep.Type, err,
+				)
+			}
+
+			// Double-check the runtime type implements the interface
+			instType := reflect.TypeOf(inst)
+			if !instType.Implements(dep.Type) {
+
+				return fmt.Errorf(
+					"dependency %q: resolved type %v does not implement %v",
+					dep.Key, instType, dep.Type,
+				)
+			}
+		} else {
+
+			// dep.Type is nil or a concrete type. Attempt a plain Resolve.
+			inst, err := container.Resolve(dep.Key)
+			if err != nil {
+
+				return fmt.Errorf("cannot register dependency %q: key not found in container: %w", dep.Key, err)
+			}
+
+			// If dep.Type is non-nil (concrete), verify assignability
+			if dep.Type != nil {
+
+				instType := reflect.TypeOf(inst)
+				if !instType.AssignableTo(dep.Type) {
+
+					return fmt.Errorf(
+						"dependency %q: resolved type %v not assignable to %v",
+						dep.Key, instType, dep.Type,
+					)
+				}
+			}
+		}
+
+		// Passed validation—append to module's dependencies
 		*m.dependencies = append(*m.dependencies, dep)
 		return nil
 	}
