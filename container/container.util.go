@@ -1,9 +1,14 @@
 package container
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"reflect"
 )
+
+type contextKey struct {
+	key string
+}
 
 // GetDependency retrieves a previously injected dependency from the Gin context.
 // It looks up the value under the key composed of DependencyPrefix + key.
@@ -23,13 +28,23 @@ func GetDependency[T any](c *gin.Context, key string) T {
 // It looks up the value under the key composed of DependencyPrefix + key.
 // If the value exists, it casts it to the requested generic type T and returns it.
 // Otherwise, it returns the zero value for type T.
-func DepFromContext[T any](c *gin.Context, key string) T {
+func DepFromContext[T any](ctx context.Context, key string) T {
+
 	dependencyKey := DependencyPrefix + key
-	if v, ok := c.Get(dependencyKey); ok {
-		return v.(T)
+
+	val := ctx.Value(contextKey{dependencyKey})
+
+	if inst, ok := val.(T); ok {
+
+		return inst
 	}
+
 	var zero T
 	return zero
+}
+
+func DepFromGinContext[T any](c *gin.Context, key string) T {
+	return DepFromContext[T](c.Request.Context(), key)
 }
 
 // Dep creates a DependencyConfig for type T against the specified key.
