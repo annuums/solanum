@@ -1,9 +1,11 @@
 package solanum
 
 import (
+	"context"
 	"fmt"
 	"github.com/annuums/solanum/container"
 	"github.com/gin-gonic/gin"
+	"reflect"
 )
 
 type (
@@ -40,21 +42,118 @@ type (
 	// It holds the Gin engine, listening port, and registered modules.
 	runner struct {
 		Engine  *gin.Engine // underlying Gin engine
-		port    int         // TCP port to listen on
+		port    *int        // TCP port to listen on
 		modules []*Module   // pointers to registered modules
 	}
 )
 
+type moduleOption func(*SolaModule) error
+
+func WithUri(uri string) moduleOption {
+	return func(m *SolaModule) error {
+
+		m.uri = uri
+		return nil
+	}
+}
+
+// WithDependency registers a DependencyConfig with the module, but only if
+// that key is actually registered in the global container and its type matches.
+// Returns an error if the key is missing in the container or if the types don’t align.
+func WithDependency(dep *container.DependencyConfig) moduleOption {
+
+	return func(m *SolaModule) error {
+
+		// Initialize the module’s dependency slice if nil
+		if m.dependencies == nil {
+			m.dependencies = &[]*container.DependencyConfig{}
+		}
+
+		// Check for duplicate Key in this module
+		for _, d := range *m.dependencies {
+
+			if d.Key == dep.Key {
+
+				return fmt.Errorf("dependency %q already registered in this module", dep.Key)
+			}
+		}
+
+		// Validate that the container actually has a provider for dep.Key,
+		// and that it matches dep.Type (if dep.Type is non-nil).
+		// If dep.Type is an interface, use ResolveByType to enforce implementation.
+		// Otherwise, use Resolve and check AssignableTo (or Implemen ts) manually.
+
+		if dep.Type != nil && dep.Type.Kind() == reflect.Interface {
+
+			// Ensure an instance can be resolved and implements dep.Type
+			inst, err := container.ResolveByType(dep.Key, dep.Type)
+			if err != nil {
+
+				return fmt.Errorf(
+					"cannot register dependency %q: failed to resolve implementation for interface %v: %w",
+					dep.Key, dep.Type, err,
+				)
+			}
+
+			// Double-check the runtime type implements the interface
+			instType := reflect.TypeOf(inst)
+			if !instType.Implements(dep.Type) {
+
+				return fmt.Errorf(
+					"dependency %q: resolved type %v does not implement %v",
+					dep.Key, instType, dep.Type,
+				)
+			}
+		} else {
+
+			// dep.Type is nil or a concrete type. Attempt a plain Resolve.
+			inst, err := container.Resolve(dep.Key)
+			if err != nil {
+
+				return fmt.Errorf("cannot register dependency %q: key not found in container: %w", dep.Key, err)
+			}
+
+			// If dep.Type is non-nil (concrete), verify assignability
+			if dep.Type != nil {
+
+				instType := reflect.TypeOf(inst)
+				if !instType.AssignableTo(dep.Type) {
+
+					return fmt.Errorf(
+						"dependency %q: resolved type %v not assignable to %v",
+						dep.Key, instType, dep.Type,
+					)
+				}
+			}
+		}
+
+		// Passed validation—append to module's dependencies
+		*m.dependencies = append(*m.dependencies, dep)
+		return nil
+	}
+}
+
 // NewModule creates a new SolaModule with the given URI prefix.
 // The module starts with empty controller, middleware, and dependency lists.
-func NewModule(uri string) *SolaModule {
-	return &SolaModule{
-		uri:             uri,
+func NewModule(opts ...moduleOption) *SolaModule {
+
+	module := &SolaModule{
 		controllers:     []Controller{},
 		preMiddlewares:  []gin.HandlerFunc{},
 		postMiddlewares: []gin.HandlerFunc{},
 		dependencies:    &[]*container.DependencyConfig{},
 	}
+
+	// functional options pattern to configure the module
+	for _, opt := range opts {
+
+		if err := opt(&SolaModule{}); err != nil {
+
+			panic(fmt.Sprintf("failed to apply module option :: %v", err))
+		}
+	}
+
+	return module
 }
 
 // PreMiddlewares returns the list of middleware to execute before handlers.
@@ -137,12 +236,16 @@ func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 // diMiddleware returns a Gin middleware that resolves and injects dependencies for each request.
 // It sets each dependency instance in the context under DependencyPrefix+key.
 func diMiddleware(deps *[]*container.DependencyConfig) gin.HandlerFunc {
+
 	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
 		seen := make(map[string]struct{}, len(*deps))
 		for _, d := range *deps {
 
 			if _, dup := seen[d.Key]; dup {
-				panic(fmt.Sprintf("duplicate dependency key: %q", d.Key))
+
+				panic("duplicate dependency key: " + d.Key)
 			}
 			seen[d.Key] = struct{}{}
 
@@ -158,9 +261,10 @@ func diMiddleware(deps *[]*container.DependencyConfig) gin.HandlerFunc {
 				panic(fmt.Errorf("failed to resolve %q: %w", d.Key, err))
 			}
 
-			depKey := container.DependencyPrefix + d.Key
-			c.Set(depKey, inst)
+			ctx = context.WithValue(ctx, container.NewContextKey(d.Key), inst)
 		}
+
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

@@ -75,6 +75,9 @@ type (
 		// GinEngine exposes the underlying *gin.Engine for custom setup.
 		GinEngine() *gin.Engine
 
+		// Port exposes the configured port for the HTTP server.
+		Port() int
+
 		// Cors applies CORS configuration to the Gin engine using functional options.
 		Cors(opts ...func(*util.CorsOption))
 

@@ -17,12 +17,14 @@ var SolanumRunner Runner
 
 // ValidateDependencies checks all registered modules for their dependencies.
 func (server *runner) ValidateDependencies() error {
+
 	for _, mPtr := range server.modules {
 
 		for _, dep := range *(*mPtr).Dependencies() {
 
 			inst, err := container.Resolve(dep.Key)
 			if err != nil {
+
 				return fmt.Errorf(
 					"dependency validation failed for key=%q :: %w",
 					dep.Key,
@@ -51,7 +53,13 @@ func (server *runner) ValidateDependencies() error {
 
 					if !instType.AssignableTo(dep.Type) {
 
-						return fmt.Errorf("dependency %q: instance type %T not assignable to %v", dep.Key, instType, dep.Type)
+						// If the instance type is not assignable to the dependency type,
+						return fmt.Errorf(
+							"dependency %q: instance type %v not assignable to %v",
+							dep.Key,
+							instType,
+							dep.Type,
+						)
 					}
 				}
 			}
@@ -63,16 +71,30 @@ func (server *runner) ValidateDependencies() error {
 
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
-	addr := fmt.Sprintf(":%v", server.port)
 
 	if err := server.ValidateDependencies(); err != nil {
+
 		log.Fatalf("❌ Dependency check failed: %v", err)
 	}
 
-	SolanumRunner.InitModules()
+	if server.port == nil {
 
-	log.Println("Solanum is running on ", addr)
-	server.Engine.Run(addr)
+		log.Fatalln("❌ Server port is not configured. Please set a port before running.")
+	}
+
+	// Start Gin Server
+	if server.Port() != 0 {
+
+		SolanumRunner.InitModules()
+
+		addr := fmt.Sprintf(":%d", *server.port)
+		log.Println("Solanum is running on ", addr)
+
+		if err := server.Engine.Run(addr); err != nil {
+
+			log.Fatalf("❌ Failed to start server on %s: %v", addr, err)
+		}
+	}
 }
 
 // InitModules sets up routing groups for each Module and applies their routes.
@@ -137,17 +159,65 @@ func (server *runner) GinEngine() *gin.Engine {
 	return server.Engine
 }
 
+// Port returns the configured port for the HTTP server.
+func (server *runner) Port() int {
+
+	if server.port == nil {
+
+		return 0
+	}
+
+	return *server.port
+}
+
+type option func(Runner)
+
+func WithPort(port int) option {
+	return func(r Runner) {
+		if runner, ok := r.(*runner); ok {
+			runner.port = &port
+		} else {
+			log.Println("⚠️ Unable to set port: Runner is not of type *runner")
+		}
+	}
+}
+
 // NewSolanum creates (once) and returns the global Runner configured for the given port.
 // It ensures global middlewares are initialized. Subsequent calls return the same Runner.
-func NewSolanum(port int) *Runner {
+func NewSolanum(opts ...option) Runner {
+
 	if SolanumRunner == nil {
-		SolanumRunner = &runner{
-			Engine: gin.New(),
-			port:   port,
+
+		SolanumRunner = &runner{}
+	}
+
+	for _, opt := range opts {
+
+		if opt != nil {
+			opt(SolanumRunner)
 		}
 	}
 
-	SolanumRunner.InitGlobalMiddlewares()
+	port := SolanumRunner.Port()
 
-	return &SolanumRunner
+	if port == 0 {
+
+		log.Println("⚠️ No port specified, using default port 0 (random port).")
+		port = 0
+	}
+
+	if port == 0 {
+
+		SolanumRunner = &runner{}
+	} else {
+
+		SolanumRunner = &runner{
+			Engine: gin.New(),
+			port:   &port,
+		}
+
+		SolanumRunner.InitGlobalMiddlewares()
+	}
+
+	return SolanumRunner
 }
