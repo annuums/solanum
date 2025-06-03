@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/annuums/solanum/container"
-	"github.com/annuums/solanum/docs/examples/dependency_injection/mvc/user"
+	"github.com/annuums/solanum/docs/examples/dependency_injection/web/mvc/user"
 	_ "github.com/lib/pq"
 )
 

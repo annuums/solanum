@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/annuums/solanum"
-	"github.com/annuums/solanum/docs/examples/dependency_injection/mvc/user"
+	"github.com/annuums/solanum/docs/examples/dependency_injection/web/mvc/user"
 )
 
 func main() {
