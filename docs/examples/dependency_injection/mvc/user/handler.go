@@ -8,7 +8,7 @@ import (
 )
 
 func retrieveUser(c *gin.Context) {
-	repo := container.DepFromContext[UserRepository](c, "userRepository")
+	repo := container.DepFromGinContext[UserRepository](c, "userRepository")
 
 	users, err := repo.FindAll()
 	if err != nil {

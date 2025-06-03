@@ -12,7 +12,7 @@ func RegisterDependencies() {
 
 	// Register a singleton database connection
 	container.Register("db", func() *sql.DB {
-		dsn := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+		dsn := "postgres://postgres:postgres@localhost:5432/annuums?sslmode=disable"
 		db, err := sql.Open("postgres", dsn)
 		if err != nil {
 			panic(fmt.Errorf("db open: %w", err))
