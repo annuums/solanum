@@ -1,6 +1,7 @@
 package solanum
 
 import (
+	"context"
 	"fmt"
 	"github.com/annuums/solanum/container"
 	"github.com/gin-gonic/gin"
@@ -137,12 +138,16 @@ func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 // diMiddleware returns a Gin middleware that resolves and injects dependencies for each request.
 // It sets each dependency instance in the context under DependencyPrefix+key.
 func diMiddleware(deps *[]*container.DependencyConfig) gin.HandlerFunc {
+
 	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
 		seen := make(map[string]struct{}, len(*deps))
 		for _, d := range *deps {
 
 			if _, dup := seen[d.Key]; dup {
-				panic(fmt.Sprintf("duplicate dependency key: %q", d.Key))
+
+				panic("duplicate dependency key: " + d.Key)
 			}
 			seen[d.Key] = struct{}{}
 
@@ -158,9 +163,10 @@ func diMiddleware(deps *[]*container.DependencyConfig) gin.HandlerFunc {
 				panic(fmt.Errorf("failed to resolve %q: %w", d.Key, err))
 			}
 
-			depKey := container.DependencyPrefix + d.Key
-			c.Set(depKey, inst)
+			ctx = context.WithValue(ctx, container.ContextKey{SolanumDepKey: d.Key}, inst)
 		}
+
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

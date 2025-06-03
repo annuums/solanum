@@ -6,11 +6,6 @@ import (
 	"sync"
 )
 
-const (
-	// DependencyPrefix is the prefix used in Gin context keys for injected dependencies.
-	DependencyPrefix = "__sol_dep__"
-)
-
 type (
 
 	// DependencyConfig defines a key and Go type for a dependency to be injected into handlers.

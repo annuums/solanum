@@ -6,8 +6,8 @@ import (
 	"reflect"
 )
 
-type contextKey struct {
-	key string
+type ContextKey struct {
+	SolanumDepKey string
 }
 
 // GetDependency retrieves a previously injected dependency from the Gin context.
@@ -16,8 +16,7 @@ type contextKey struct {
 // Otherwise, it returns the zero value for type T.
 // Deprecated: This function is deprecated and will be removed in future versions. Use DepFromContext instead.
 func GetDependency[T any](c *gin.Context, key string) T {
-	dependencyKey := DependencyPrefix + key
-	if v, ok := c.Get(dependencyKey); ok {
+	if v, ok := c.Get(key); ok {
 		return v.(T)
 	}
 	var zero T
@@ -30,9 +29,7 @@ func GetDependency[T any](c *gin.Context, key string) T {
 // Otherwise, it returns the zero value for type T.
 func DepFromContext[T any](ctx context.Context, key string) T {
 
-	dependencyKey := DependencyPrefix + key
-
-	val := ctx.Value(contextKey{dependencyKey})
+	val := ctx.Value(ContextKey{SolanumDepKey: key})
 
 	if inst, ok := val.(T); ok {
 
