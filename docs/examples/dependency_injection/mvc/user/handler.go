@@ -8,7 +8,7 @@ import (
 )
 
 func retrieveUser(c *gin.Context) {
-	repo := container.GetDependency[UserRepository](c, "userRepository")
+	repo := container.DepFromContext[UserRepository](c, "userRepository")
 
 	users, err := repo.FindAll()
 	if err != nil {
@@ -28,7 +28,7 @@ func addUser(c *gin.Context) {
 		return
 	}
 	u := &User{Name: req.Name, Email: req.Email, CreatedAt: time.Now()}
-	repo := container.GetDependency[UserRepository](c, "userRepository")
+	repo := container.DepFromContext[UserRepository](c, "userRepository")
 	if err := repo.Create(u); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
