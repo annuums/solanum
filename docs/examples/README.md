@@ -7,7 +7,6 @@ docs/examples
 ├── simple
 │   └── main.go           ← minimal “health check” server
 └── dependency_injection
-    ├── cli               ← CLI Application example
     └── web                       ← web application examples
         ├── README.md             ← DI/MVC example details
         └── mvc
