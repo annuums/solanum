@@ -37,7 +37,7 @@ Solanum solves these pain points by:
 - **Microservices**  
 - **GraphQL or gRPC gateways**  
 - **CLI tools or batch workers** (reuse DI container in non-web context)  
-- **Health checks, admin dashboards, metrics endpoints**
+- **Web Server for Applications**; Health checks, admin dashboards, metrics endpoints, etc.
 
 Whether you need a single `/ping` health check or a complex set of user, order, and payment services, Solanum keeps your code organized and your dependencies explicit.
 
