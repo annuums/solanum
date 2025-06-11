@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/annuums/solanum/container"
 	"github.com/annuums/solanum/util"
-	"log"
 	"reflect"
 	"time"
 
@@ -72,8 +71,6 @@ func (server *runner) ValidateDependencies() error {
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 
-	addr := fmt.Sprintf(":%v", server.port)
-
 	if err := server.ValidateDependencies(); err != nil {
 
 		panic("Dependency check failed :: " + err.Error())
@@ -81,7 +78,7 @@ func (server *runner) Run() {
 
 	if server.port == nil {
 
-		log.Fatalln("❌ Server port is not configured. Please set a port before running.")
+		panic("Server port is not configured. Please set a port before running.")
 	}
 
 	// Start Gin Server
@@ -90,7 +87,7 @@ func (server *runner) Run() {
 		SolanumRunner.InitModules()
 
 		addr := fmt.Sprintf(":%d", *server.port)
-		log.Println("Solanum is running on ", addr)
+		fmt.Printf("Solanum is running on %s\n", addr)
 
 		if err := server.Engine.Run(addr); err != nil {
 
@@ -102,7 +99,7 @@ func (server *runner) Run() {
 // InitModules sets up routing groups for each Module and applies their routes.
 func (server *runner) InitModules() {
 
-	log.Println("Initialize Modules...")
+	fmt.Println("Initialize Modules...")
 
 	for _, m := range server.modules {
 
@@ -192,7 +189,7 @@ func WithPort(port int) option {
 			runner.port = &port
 		} else {
 
-			log.Println("⚠️ Unable to set port: Runner is not of type *runner")
+			fmt.Println("⚠️ Unable to set port: Runner is not of type *runner")
 		}
 	}
 }
@@ -217,7 +214,7 @@ func NewSolanum(opts ...option) Runner {
 
 	if port == 0 {
 
-		log.Println("⚠️ No port specified, using default port 0 (random port).")
+		fmt.Println("⚠️ No port specified, using default port 0 (random port).")
 		port = 0
 	}
 
