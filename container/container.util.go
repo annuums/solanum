@@ -12,6 +12,7 @@ type ContextKey struct {
 }
 
 func NewContextKey(key string) ContextKey {
+
 	return ContextKey{solanumDepKey: key}
 }
 
@@ -50,6 +51,7 @@ func DepFromContext[T any](ctx context.Context, key string) T {
 
 // DepFromGinContext retrieves a previously injected dependency from the Gin context.
 func DepFromGinContext[T any](c *gin.Context, key string) T {
+
 	return DepFromContext[T](c.Request.Context(), key)
 }
 
