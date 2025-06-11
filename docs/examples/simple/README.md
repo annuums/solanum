@@ -8,13 +8,29 @@ package main
 import "github.com/annuums/solanum"
 
 func main() {
-    server := *solanum.NewSolanum(5050)
 
-    // Mount the built-in HealthCheck module at /ping
-    healthCheck := solanum.NewHealthCheckModule("/ping")
-    server.SetModules(healthCheck)
+	pingModule := solanum.NewModule(
+		solanum.WithUri("/ping"),
+	)
 
-    server.Run()
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(
+		&solanum.SolaService{
+			Uri:    "",
+			Method: http.MethodGet,
+			Handler: func(c *gin.Context) {
+				c.String(http.StatusOK, "pong")
+			},
+		},
+	)
+	pingModule.SetControllers(ctrl)
+
+	server := solanum.NewSolanum(
+		solanum.WithPort(5050),
+	)
+
+	server.SetModules(pingModule)
+	server.Run()
 }
 ```
 

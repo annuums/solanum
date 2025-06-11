@@ -7,9 +7,11 @@ import (
 )
 
 func main() {
+
 	pingModule := solanum.NewModule(
 		solanum.WithUri("/ping"),
 	)
+
 	ctrl := solanum.NewController()
 	ctrl.SetHandlers(
 		&solanum.SolaService{
@@ -27,6 +29,5 @@ func main() {
 	)
 
 	server.SetModules(pingModule)
-
 	server.Run()
 }
