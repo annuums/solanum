@@ -7,8 +7,8 @@ import (
 
 // Default CORS settings
 var (
-	CorsDefaultMethods      = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
-	CorsDefaultHeaders      = []string{
+	CorsDefaultMethods = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
+	CorsDefaultHeaders = []string{
 		"Access-Control-Allow-Headers",
 		"Origin",
 		"Accept",
@@ -47,6 +47,7 @@ type CorsOption struct {
 
 // WithUrls sets the allowed origin URLs for CORS.
 func WithUrls(urls []string) func(*CorsOption) {
+
 	return func(s *CorsOption) {
 		s.Urls = urls
 	}
@@ -54,6 +55,7 @@ func WithUrls(urls []string) func(*CorsOption) {
 
 // WithHeaders sets the allowed HTTP headers for CORS.
 func WithHeaders(headers []string) func(*CorsOption) {
+
 	return func(s *CorsOption) {
 		s.Headers = headers
 	}
@@ -61,6 +63,7 @@ func WithHeaders(headers []string) func(*CorsOption) {
 
 // WithMethods sets the allowed HTTP methods for CORS.
 func WithMethods(methods []string) func(*CorsOption) {
+
 	return func(s *CorsOption) {
 		s.Methods = methods
 	}
@@ -68,6 +71,7 @@ func WithMethods(methods []string) func(*CorsOption) {
 
 // WithAllowCredentials enables or disables transmission of credentials (cookies) in CORS requests.
 func WithAllowCredentials(allowCredentials bool) func(*CorsOption) {
+
 	return func(s *CorsOption) {
 		s.AllowCredentials = allowCredentials
 	}
@@ -75,6 +79,7 @@ func WithAllowCredentials(allowCredentials bool) func(*CorsOption) {
 
 // WithOriginFunc sets a custom origin validation function for CORS.
 func WithOriginFunc(originFunc func(origin string) bool) func(*CorsOption) {
+
 	return func(s *CorsOption) {
 		s.OriginFunc = originFunc
 	}
@@ -82,6 +87,7 @@ func WithOriginFunc(originFunc func(origin string) bool) func(*CorsOption) {
 
 // WithMaxAge sets the maximum age (in hours) for CORS preflight requests to be cached.
 func WithMaxAge(maxAge int) func(*CorsOption) {
+
 	return func(s *CorsOption) {
 		s.MaxAge = maxAge
 	}
@@ -90,43 +96,55 @@ func WithMaxAge(maxAge int) func(*CorsOption) {
 // CorsOptions applies a list of option functions to a CorsOption instance and
 // fills in defaults for any missing settings.
 func CorsOptions(opts ...func(*CorsOption)) *CorsOption {
+
 	var options CorsOption
 	for _, opt := range opts {
+
 		opt(&options)
 	}
 
 	// Use default headers if none specified
 	if options.Headers == nil || len(options.Headers) == 0 {
+
 		options.Headers = CorsDefaultHeaders
 	}
 
 	// Use default methods if none specified
 	if options.Methods == nil || len(options.Methods) == 0 {
+
 		options.Methods = CorsDefaultMethods
 	}
 
 	// Use default origin validation function
 	if options.OriginFunc == nil {
+
 		// If no URLs provided, allow all origins
 		if options.Urls == nil || len(options.Urls) == 0 {
+
 			log.Println("Both urls and originfunc for cors are not defined. allowing all origins...")
 			options.OriginFunc = func(origin string) bool {
+
 				return true
 			}
 		} else {
+
 			// Restrict to configured URLs or wildcard
 			options.OriginFunc = func(origin string) bool {
+
 				// '*' wildcard allows all origins
 				if len(options.Urls) == 1 && options.Urls[0] == "*" {
+
 					return true
 				}
 
 				// Permit origin if it matches one in the list
 				for _, allowed := range options.Urls {
+
 					if origin == allowed {
 						return true
 					}
 				}
+
 				return false
 			}
 		}

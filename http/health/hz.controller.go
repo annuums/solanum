@@ -6,6 +6,7 @@ import (
 )
 
 func NewHealthCheckController() *solanum.SolaController {
+
 	healthCheckController := solanum.NewController()
 
 	healthCheckController.SetHandlers(

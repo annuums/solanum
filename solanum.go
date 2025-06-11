@@ -72,9 +72,11 @@ func (server *runner) ValidateDependencies() error {
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 
+	addr := fmt.Sprintf(":%v", server.port)
+
 	if err := server.ValidateDependencies(); err != nil {
 
-		log.Fatalf("❌ Dependency check failed: %v", err)
+		panic("Dependency check failed :: " + err.Error())
 	}
 
 	if server.port == nil {
@@ -92,15 +94,18 @@ func (server *runner) Run() {
 
 		if err := server.Engine.Run(addr); err != nil {
 
-			log.Fatalf("❌ Failed to start server on %s: %v", addr, err)
+			panic("fail to run server on addr :: " + addr + " :: " + err.Error())
 		}
 	}
 }
 
 // InitModules sets up routing groups for each Module and applies their routes.
 func (server *runner) InitModules() {
+
 	log.Println("Initialize Modules...")
+
 	for _, m := range server.modules {
+
 		(*m).SetRoutes(
 			server.GinEngine().Group(
 				(*m).Uri(),
@@ -111,17 +116,21 @@ func (server *runner) InitModules() {
 
 // SetModules registers one or more Module implementations with the Runner.
 func (server *runner) SetModules(m ...Module) {
+
 	if server.modules == nil {
+
 		server.modules = make([]*Module, 0)
 	}
 
 	for i := range m {
+
 		server.modules = append(server.modules, &m[i])
 	}
 }
 
 // Modules returns the slice of all registered Module pointers.
 func (server *runner) Modules() []*Module {
+
 	return server.modules
 }
 
@@ -138,6 +147,7 @@ func (server *runner) InitGlobalMiddlewares() {
 // Cors applies configured CORS settings to the Gin engine using the cors middleware.
 // Accepts functional options for customizing allowed origins, methods, headers, etc.
 func (server *runner) Cors(opts ...func(*util.CorsOption)) {
+
 	options := util.CorsOptions(opts...)
 
 	server.Engine.Use(
@@ -156,6 +166,7 @@ func (server *runner) Cors(opts ...func(*util.CorsOption)) {
 
 // GinEngine returns the underlying *gin.Engine for direct access and customization.
 func (server *runner) GinEngine() *gin.Engine {
+
 	return server.Engine
 }
 
@@ -173,10 +184,14 @@ func (server *runner) Port() int {
 type option func(Runner)
 
 func WithPort(port int) option {
+
 	return func(r Runner) {
+
 		if runner, ok := r.(*runner); ok {
+
 			runner.port = &port
 		} else {
+
 			log.Println("⚠️ Unable to set port: Runner is not of type *runner")
 		}
 	}

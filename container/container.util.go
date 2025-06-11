@@ -21,9 +21,12 @@ func NewContextKey(key string) ContextKey {
 // Otherwise, it returns the zero value for type T.
 // Deprecated: This function is deprecated and will be removed in future versions. Use DepFromContext instead.
 func GetDependency[T any](c *gin.Context, key string) T {
+
 	if v, ok := c.Get(key); ok {
+
 		return v.(T)
 	}
+
 	var zero T
 	return zero
 }
@@ -89,6 +92,7 @@ func Dep[T any](key string) T {
 // It uses a pointer-to-T to obtain the reflect.Type of T and returns
 // a DependencyConfig that can be passed to Module.SetDependencies.
 func DepConfig[T any](key string) *DependencyConfig {
+
 	// Create a nil pointer of type *T so that reflect.TypeOf(ptr).Elem()
 	// yields the reflect.Type representing T.
 	var ptr *T

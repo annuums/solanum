@@ -5,5 +5,6 @@ import (
 )
 
 func hzHandler(ctx *gin.Context) {
+
 	ctx.String(200, "pong")
 }

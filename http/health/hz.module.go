@@ -11,6 +11,7 @@ var healthCheckModule *solanum.SolaModule
 var hzOnce sync.Once
 
 func NewHealthCheckModule(uri string) *solanum.SolaModule {
+
 	hzOnce.Do(func() {
 		if healthCheckModule == nil {
 			healthCheckModule = solanum.NewModule(uri)
@@ -24,6 +25,7 @@ func NewHealthCheckModule(uri string) *solanum.SolaModule {
 }
 
 func attachControllers() {
+
 	//* Attatching Controller Directly
 	ctr := NewHealthCheckController()
 	// ctr2, _ := NewAnotherController()
@@ -33,6 +35,7 @@ func attachControllers() {
 }
 
 func setPreMiddlewares() {
+
 	healthCheckModule.SetPreMiddlewares(
 		func(ctx *gin.Context) {
 			log.Println("Health Checking...")
@@ -41,6 +44,7 @@ func setPreMiddlewares() {
 }
 
 func setPostMiddlewares() {
+
 	healthCheckModule.SetPostMiddlewares(
 		func(ctx *gin.Context) {
 			log.Println("Health Check Done!")

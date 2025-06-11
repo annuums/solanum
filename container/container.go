@@ -70,16 +70,19 @@ type RegisterOption func(*providerEntry)
 
 // WithSingleton marks the provider as a singleton (default behavior).
 func WithSingleton() RegisterOption {
+
 	return func(pe *providerEntry) { pe.singleton = true }
 }
 
 // WithTransient marks the provider as transient, creating a new instance on each resolve.
 func WithTransient() RegisterOption {
+
 	return func(pe *providerEntry) { pe.singleton = false }
 }
 
 // WithInit sets a hook function to be invoked once after the instance is created.
 func WithInit(hook func(interface{})) RegisterOption {
+
 	return func(pe *providerEntry) { pe.initHook = hook }
 }
 
@@ -101,9 +104,13 @@ func WithDep[T any](key string) RegisterOption {
 // As binds this provider under a specified interface type, allowing ResolveByType to work.
 // Example: solanum.As((*MyInterface)(nil)) binds to MyInterface.
 func As(ifacePtr interface{}) RegisterOption {
+
 	// reflect.TypeOf((*MyIface)(nil)).Elem()
 	t := reflect.TypeOf(ifacePtr).Elem()
-	return func(pe *providerEntry) { pe.interfaceType = t }
+	return func(pe *providerEntry) {
+
+		pe.interfaceType = t
+	}
 }
 
 // Register adds a new provider under the given key. The provider can be either:
@@ -196,6 +203,7 @@ func Register(key string, provider interface{}, opts ...RegisterOption) {
 
 	// Apply all registration options
 	for _, o := range opts {
+
 		o(pe)
 	}
 
@@ -310,11 +318,15 @@ func ResolveByType(key string, ifaceType reflect.Type) (interface{}, error) {
 
 	inst, err := Resolve(key)
 	if err != nil {
+
 		return nil, err
 	}
+
 	if ifaceType == nil {
+
 		return inst, nil
 	}
+
 	if !reflect.TypeOf(inst).Implements(ifaceType) {
 
 		return nil, fmt.Errorf("provider %q does not implement %v", key, ifaceType)
