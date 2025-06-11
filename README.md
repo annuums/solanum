@@ -112,10 +112,12 @@ func main() {
     )
 
     // 3) Create & run server
-    app := solanum.NewSolanum(8080)
+    app := solanum.NewSolanum(
+      solanum.WithPort(5050),
+   )
     app.SetModules(userModule)
     app.Cors()   // default CORS
-    app.Run()    // starts on :8080
+    app.Run()    // starts on :5050
 }
 ```
 
