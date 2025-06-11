@@ -2,18 +2,31 @@ package main
 
 import (
 	"github.com/annuums/solanum"
-	"github.com/annuums/solanum/http/health"
+	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func main() {
-	server := *solanum.NewSolanum(5050)
+	pingModule := solanum.NewModule(
+		solanum.WithUri("/ping"),
+	)
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(
+		&solanum.SolaService{
+			Uri:    "",
+			Method: http.MethodGet,
+			Handler: func(c *gin.Context) {
+				c.String(http.StatusOK, "pong")
+			},
+		},
+	)
+	pingModule.SetControllers(ctrl)
 
-	healthCheckUri := "/ping"
-	healthCheckModule := health.NewHealthCheckModule(
-		healthCheckUri,
+	server := solanum.NewSolanum(
+		solanum.WithPort(5050),
 	)
 
-	server.SetModules(healthCheckModule)
+	server.SetModules(pingModule)
 
 	server.Run()
 }

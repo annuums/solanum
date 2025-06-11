@@ -50,6 +50,7 @@ type (
 type moduleOption func(*SolaModule) error
 
 func WithUri(uri string) moduleOption {
+
 	return func(m *SolaModule) error {
 
 		m.uri = uri
@@ -147,7 +148,7 @@ func NewModule(opts ...moduleOption) *SolaModule {
 	// functional options pattern to configure the module
 	for _, opt := range opts {
 
-		if err := opt(&SolaModule{}); err != nil {
+		if err := opt(module); err != nil {
 
 			panic(fmt.Sprintf("failed to apply module option :: %v", err))
 		}
