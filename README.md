@@ -97,27 +97,29 @@ package main
 import "github.com/annuums/solanum"
 
 func main() {
-    // 1) Register dependencies
-    solanum.Register("db", ProvideDB, solanum.WithSingleton())
-    solanum.Register("userRepo", ProvideUserRepo, solanum.WithTransient(), solanum.As((*UserRepo)(nil)))
-    solanum.Register("userSvc", ProvideUserService, solanum.WithTransient())
 
-    // 2) Define module
-    userModule := solanum.NewModule("/users")
-    userModule.SetControllers(userController)
-    userModule.SetDependencies(
-        solanum.Dep[*sql.DB]("db"),
-        solanum.Dep[UserRepo]("userRepo"),
-        solanum.Dep[*UserService]("userSvc"),
-    )
+   pingModule := solanum.NewModule(
+      solanum.WithUri("/ping"),
+   )
 
-    // 3) Create & run server
-    app := solanum.NewSolanum(
+   ctrl := solanum.NewController()
+   ctrl.SetHandlers(
+      &solanum.SolaService{
+         Uri:    "",
+         Method: http.MethodGet,
+         Handler: func(c *gin.Context) {
+            c.String(http.StatusOK, "pong")
+         },
+      },
+   )
+   pingModule.SetControllers(ctrl)
+
+   server := solanum.NewSolanum(
       solanum.WithPort(5050),
    )
-    app.SetModules(userModule)
-    app.Cors()   // default CORS
-    app.Run()    // starts on :5050
+
+   server.SetModules(pingModule)
+   server.Run()
 }
 ```
 
