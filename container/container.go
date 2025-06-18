@@ -327,9 +327,22 @@ func ResolveByType(key string, ifaceType reflect.Type) (interface{}, error) {
 		return inst, nil
 	}
 
-	if !reflect.TypeOf(inst).Implements(ifaceType) {
+	instType := reflect.TypeOf(inst)
 
-		return nil, fmt.Errorf("provider %q does not implement %v", key, ifaceType)
+	switch ifaceType.Kind() {
+	case reflect.Interface:
+
+		if !instType.Implements(ifaceType) {
+
+			return nil, fmt.Errorf("provider %q does not implement %v", key, ifaceType)
+		}
+
+	default:
+
+		if !instType.AssignableTo(ifaceType) {
+
+			return nil, fmt.Errorf("provider %q: type %v not assignable to %v", key, instType, ifaceType)
+		}
 	}
 
 	return inst, nil
