@@ -2,234 +2,181 @@ package solanum
 
 import (
 	"fmt"
-	"github.com/annuums/solanum/container"
-	"github.com/annuums/solanum/util"
-	"reflect"
-	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-// SolanumRunner holds the global Runner instance used to configure and start the server.
-var SolanumRunner Runner
-
-// ValidateDependencies checks all registered modules for their dependencies.
-func (server *runner) ValidateDependencies() error {
-
-	for _, mPtr := range server.modules {
-
-		for _, dep := range *(*mPtr).Dependencies() {
-
-			inst, err := container.Resolve(dep.Key)
-			if err != nil {
-
-				return fmt.Errorf(
-					"dependency validation failed for key=%q :: %w",
-					dep.Key,
-					err,
-				)
-			}
-
-			if dep.Type != nil {
-
-				instType := reflect.TypeOf(inst)
-
-				switch dep.Type.Kind() {
-				case reflect.Interface:
-
-					if !instType.Implements(dep.Type) {
-
-						return fmt.Errorf(
-							"dependency %q: instance type %v does not implement %v",
-							dep.Key,
-							instType,
-							dep.Type,
-						)
-					}
-
-				default:
-
-					if !instType.AssignableTo(dep.Type) {
-
-						// If the instance type is not assignable to the dependency type,
-						return fmt.Errorf(
-							"dependency %q: instance type %v not assignable to %v",
-							dep.Key,
-							instType,
-							dep.Type,
-						)
-					}
-				}
-			}
-		}
+type (
+	// SolaModule encapsulates a self-contained HTTP module with its own URI prefix,
+	// controllers, middleware stacks, and dependency configurations.
+	SolaModule struct {
+		uri             string            // base URI path for the module (e.g., "/users")
+		controllers     []Controller      // registered controllers for this module
+		preMiddlewares  []gin.HandlerFunc // middleware to run before each handler
+		postMiddlewares []gin.HandlerFunc // middleware to run after each handler
 	}
 
-	return nil
-}
-
-// Run initializes all modules and starts the Gin HTTP server on the configured port.
-func (server *runner) Run() {
-
-	if err := server.ValidateDependencies(); err != nil {
-
-		panic("Dependency check failed :: " + err.Error())
+	// SolaController groups one or more SolaService handlers under a logical controller.
+	// It implements the Controller interface, managing a list of SolaService entries.
+	SolaController struct {
+		handlers []*SolaService // handlers service handlers defined for this controller
 	}
 
-	if server.port == nil {
+	// SolaService represents a single HTTP route handler configuration.
+	SolaService struct {
+		// Uri the relative path for the service (e.g., "/:id")
+		// route URI relative to module prefix
+		Uri string
 
-		panic("Server port is not configured. Please set a port before running.")
+		// Method the HTTP method to bind (GET, POST, etc.)
+		Method string
+
+		// Handler the Gin handler function to execute
+		Handler gin.HandlerFunc
 	}
 
-	// Start Gin Server
-	if server.Port() != 0 {
+	// runner implements the Runner interface and drives the application startup.
+	// It holds the Gin engine, listening port, and registered modules.
+	runner struct {
+		Engine  *gin.Engine // underlying Gin engine
+		port    int         // TCP port to listen on
+		modules []*Module   // pointers to registered modules
+	}
+)
 
-		SolanumRunner.InitModules()
+type moduleOption func(*SolaModule) error
 
-		addr := fmt.Sprintf(":%d", *server.port)
-		fmt.Printf("Solanum is running on %s\n", addr)
+func WithUri(uri string) moduleOption {
 
-		if err := server.Engine.Run(addr); err != nil {
+	return func(m *SolaModule) error {
 
-			panic("fail to run server on addr :: " + addr + " :: " + err.Error())
-		}
+		m.uri = uri
+		return nil
 	}
 }
 
-// InitModules sets up routing groups for each Module and applies their routes.
-func (server *runner) InitModules() {
+// NewModule creates a new SolaModule with the given URI prefix.
+// The module starts with empty controller, middleware, and dependency lists.
+func NewModule(opts ...moduleOption) *SolaModule {
 
-	fmt.Println("Initialize Modules...")
-
-	for _, m := range server.modules {
-
-		(*m).SetRoutes(
-			server.GinEngine().Group(
-				(*m).Uri(),
-			),
-		)
-	}
-}
-
-// SetModules registers one or more Module implementations with the Runner.
-func (server *runner) SetModules(m ...Module) {
-
-	if server.modules == nil {
-
-		server.modules = make([]*Module, 0)
+	module := &SolaModule{
+		controllers:     []Controller{},
+		preMiddlewares:  []gin.HandlerFunc{},
+		postMiddlewares: []gin.HandlerFunc{},
 	}
 
-	for i := range m {
-
-		server.modules = append(server.modules, &m[i])
-	}
-}
-
-// Modules returns the slice of all registered Module pointers.
-func (server *runner) Modules() []*Module {
-
-	return server.modules
-}
-
-// InitGlobalMiddlewares is a placeholder for registering application-wide middlewares
-// such as logging, authentication, and authorization. Implement as needed.
-func (server *runner) InitGlobalMiddlewares() {
-	//* 1. Logger, ...
-
-	//* 2. Authentication, ...
-
-	//* 3. Authorization, ...
-}
-
-// Cors applies configured CORS settings to the Gin engine using the cors middleware.
-// Accepts functional options for customizing allowed origins, methods, headers, etc.
-func (server *runner) Cors(opts ...func(*util.CorsOption)) {
-
-	options := util.CorsOptions(opts...)
-
-	server.Engine.Use(
-		cors.New(
-			cors.Config{
-				AllowOrigins:     options.Urls,
-				AllowMethods:     options.Methods,
-				AllowHeaders:     options.Headers,
-				AllowCredentials: options.AllowCredentials,
-				AllowOriginFunc:  options.OriginFunc,
-				MaxAge:           time.Duration(options.MaxAge) * time.Hour,
-			},
-		),
-	)
-}
-
-// GinEngine returns the underlying *gin.Engine for direct access and customization.
-func (server *runner) GinEngine() *gin.Engine {
-
-	return server.Engine
-}
-
-// Port returns the configured port for the HTTP server.
-func (server *runner) Port() int {
-
-	if server.port == nil {
-
-		return 0
-	}
-
-	return *server.port
-}
-
-type option func(Runner)
-
-func WithPort(port int) option {
-
-	return func(r Runner) {
-
-		if runner, ok := r.(*runner); ok {
-
-			runner.port = &port
-		} else {
-
-			fmt.Println("⚠️ Unable to set port: Runner is not of type *runner")
-		}
-	}
-}
-
-// NewSolanum creates (once) and returns the global Runner configured for the given port.
-// It ensures global middlewares are initialized. Subsequent calls return the same Runner.
-func NewSolanum(opts ...option) Runner {
-
-	if SolanumRunner == nil {
-
-		SolanumRunner = &runner{}
-	}
-
+	// functional options pattern to configure the module
 	for _, opt := range opts {
 
-		if opt != nil {
-			opt(SolanumRunner)
+		if err := opt(module); err != nil {
+
+			panic(fmt.Sprintf("failed to apply module option :: %v", err))
 		}
 	}
 
-	port := SolanumRunner.Port()
+	return module
+}
 
-	if port == 0 {
+// PreMiddlewares returns the list of middleware to execute before handlers.
+func (m *SolaModule) PreMiddlewares() []gin.HandlerFunc {
 
-		fmt.Println("⚠️ No port specified, using default port 0 (random port).")
-		port = 0
-	}
+	return m.preMiddlewares
+}
 
-	if port == 0 {
+// PostMiddlewares returns the list of middleware to execute after handlers.
+func (m *SolaModule) PostMiddlewares() []gin.HandlerFunc {
 
-		SolanumRunner = &runner{}
-	} else {
+	return m.postMiddlewares
+}
 
-		SolanumRunner = &runner{
-			Engine: gin.New(),
-			port:   &port,
+// SetPreMiddlewares replaces the pre-handler middleware chain with the provided list.
+func (m *SolaModule) SetPreMiddlewares(middlewares ...gin.HandlerFunc) {
+
+	m.preMiddlewares = make([]gin.HandlerFunc, 0)
+	m.preMiddlewares = append(m.preMiddlewares, middlewares...)
+}
+
+// SetPostMiddlewares replaces the post-handler middleware chain with the provided list.
+func (m *SolaModule) SetPostMiddlewares(middlewares ...gin.HandlerFunc) {
+
+	m.postMiddlewares = make([]gin.HandlerFunc, 0)
+	m.postMiddlewares = append(m.postMiddlewares, middlewares...)
+}
+
+// AddPreMiddleware appends a single middleware to the pre-handler chain.
+func (m *SolaModule) AddPreMiddleware(middleware gin.HandlerFunc) {
+
+	m.preMiddlewares = append(m.preMiddlewares, middleware)
+}
+
+// AddPostMiddleware appends a single middleware to the post-handler chain.
+func (m *SolaModule) AddPostMiddleware(middleware gin.HandlerFunc) {
+
+	m.postMiddlewares = append(m.postMiddlewares, middleware)
+}
+
+// Controllers returns all controllers registered in this module.
+func (m *SolaModule) Controllers() []Controller {
+
+	return m.controllers
+}
+
+// SetControllers registers one or more Controller implementations for this module.
+func (m *SolaModule) SetControllers(c ...Controller) {
+
+	m.controllers = append(m.controllers, c...)
+}
+
+// SetRoutes registers the module's routes, middleware, and DI middleware on the given RouterGroup.
+// It applies DI if dependencies are defined, then mounts each SolaService handler with pre- and post-middleware.
+func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
+
+	// Iterate controllers and their services
+	for _, c := range m.controllers {
+
+		ctr, ok := c.(*SolaController)
+		if !ok {
+
+			panic(fmt.Sprintf("controller is not *SolaController: %T", c))
 		}
 
-		SolanumRunner.InitGlobalMiddlewares()
+		for _, svc := range ctr.handlers {
+
+			// pre → handler → post
+			chain := append(append(m.preMiddlewares, svc.Handler), m.postMiddlewares...)
+			router.Handle(svc.Method, svc.Uri, chain...)
+		}
+	}
+}
+
+// Uri returns the base URI prefix for this module.
+func (m *SolaModule) Uri() string {
+
+	return m.uri
+}
+
+// NewController constructs an empty SolaController ready to receive handlers.
+func NewController() *SolaController {
+
+	return &SolaController{
+		handlers: make([]*SolaService, 0),
+	}
+}
+
+// SetHandlers appends one or more SolaService entries to the controller's handler list.
+func (ctr *SolaController) SetHandlers(handlers ...*SolaService) {
+
+	if ctr.handlers == nil {
+
+		ctr.handlers = make([]*SolaService, 0)
 	}
 
-	return SolanumRunner
+	// ctr.handlers = append(ctr.handlers, *svc)
+	ctr.handlers = append(ctr.handlers, handlers...)
+}
+
+// Handlers returns the slice of SolaService entries managed by this controller.
+func (ctr *SolaController) Handlers() []*SolaService {
+
+	return ctr.handlers
 }

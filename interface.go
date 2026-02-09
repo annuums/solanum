@@ -1,7 +1,6 @@
 package solanum
 
 import (
-	"github.com/annuums/solanum/container"
 	"github.com/annuums/solanum/util"
 	"github.com/gin-gonic/gin"
 )
@@ -44,12 +43,6 @@ type (
 		// SetControllers registers one or more Controller implementations.
 		SetControllers(c ...Controller)
 
-		// Dependencies returns the list of dependencies that this module injects.
-		Dependencies() *[]*container.DependencyConfig
-
-		// SetDependencies defines which dependencies to inject via middleware.
-		SetDependencies(deps ...container.DependencyConfig)
-
 		// SetRoutes binds the module's controllers, middleware, and routes onto a RouterGroup.
 		SetRoutes(router *gin.RouterGroup)
 
@@ -80,9 +73,6 @@ type (
 
 		// Cors applies CORS configuration to the Gin engine using functional options.
 		Cors(opts ...func(*util.CorsOption))
-
-		// ValidateDependencies checks that all dependencies are registered.
-		ValidateDependencies() error
 
 		// Run boots the HTTP server, initializing modules and listening on the configured port.
 		Run()
