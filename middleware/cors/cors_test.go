@@ -1,10 +1,9 @@
-package solanum_test
+package cors_test
 
 import (
-	"github.com/annuums/solanum/middleware/cors"
-
 	"testing"
 
+	"github.com/annuums/solanum/middleware/cors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +11,6 @@ import (
 func TestCorsOptionsDefaultValues(t *testing.T) {
 	op := cors.Options()
 
-	// Headers and Methods should pick up global defaults
 	assert.Equal(t, cors.DefaultHeaders, op.Headers)
 	assert.Equal(t, cors.DefaultMethods, op.Methods)
 

@@ -6,43 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type (
-	// SolaModule encapsulates a self-contained HTTP module with its own URI prefix,
-	// controllers, middleware stacks, and dependency configurations.
-	SolaModule struct {
-		uri             string            // base URI path for the module (e.g., "/users")
-		controllers     []Controller      // registered controllers for this module
-		preMiddlewares  []gin.HandlerFunc // middleware to run before each handler
-		postMiddlewares []gin.HandlerFunc // middleware to run after each handler
-	}
-
-	// SolaController groups one or more SolaService handlers under a logical controller.
-	// It implements the Controller interface, managing a list of SolaService entries.
-	SolaController struct {
-		handlers []*SolaService // handlers service handlers defined for this controller
-	}
-
-	// SolaService represents a single HTTP route handler configuration.
-	SolaService struct {
-		// Uri the relative path for the service (e.g., "/:id")
-		// route URI relative to module prefix
-		Uri string
-
-		// Method the HTTP method to bind (GET, POST, etc.)
-		Method string
-
-		// Handler the Gin handler function to execute
-		Handler gin.HandlerFunc
-	}
-
-	// runner implements the Runner interface and drives the application startup.
-	// It holds the Gin engine, listening port, and registered modules.
-	runner struct {
-		Engine  *gin.Engine // underlying Gin engine
-		port    int         // TCP port to listen on
-		modules []Module    // pointers to registered modules
-	}
-)
+// SolaModule encapsulates a self-contained HTTP module with its own URI prefix,
+// controllers, and middleware stacks.
+type SolaModule struct {
+	uri             string            // base URI path for the module (e.g., "/users")
+	controllers     []Controller      // registered controllers for this module
+	preMiddlewares  []gin.HandlerFunc // middleware to run before each handler
+	postMiddlewares []gin.HandlerFunc // middleware to run after each handler
+}
 
 type moduleOption func(*SolaModule) error
 
@@ -56,7 +27,7 @@ func WithUri(uri string) moduleOption {
 }
 
 // NewModule creates a new SolaModule with the given URI prefix.
-// The module starts with empty controller, middleware, and dependency lists.
+// The module starts with empty controller and middleware lists.
 func NewModule(opts ...moduleOption) *SolaModule {
 
 	module := &SolaModule{
@@ -65,7 +36,6 @@ func NewModule(opts ...moduleOption) *SolaModule {
 		postMiddlewares: []gin.HandlerFunc{},
 	}
 
-	// functional options pattern to configure the module
 	for _, opt := range opts {
 
 		if err := opt(module); err != nil {
@@ -132,12 +102,12 @@ func (m *SolaModule) AddControllers(c ...Controller) {
 }
 
 // SetRoutes registers the module's routes and middleware on the given RouterGroup.
-// It mounts each SolaService handler with pre- and post-middleware.
+// The final handler chain per route is: pre-middlewares → handler → post-middlewares.
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
+
 	for _, c := range m.controllers {
 		for _, svc := range c.Handlers() {
 
-			// pre → handler → post
 			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+1+len(m.postMiddlewares))
 			chain = append(chain, m.preMiddlewares...)
 			chain = append(chain, svc.Handler)
@@ -151,24 +121,4 @@ func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 func (m *SolaModule) Uri() string {
 
 	return m.uri
-}
-
-// NewController constructs an empty SolaController ready to receive handlers.
-func NewController() *SolaController {
-
-	return &SolaController{
-		handlers: make([]*SolaService, 0),
-	}
-}
-
-// SetHandlers replaces the controller's handler list with the provided entries.
-func (ctr *SolaController) SetHandlers(handlers ...*SolaService) {
-
-	ctr.handlers = handlers
-}
-
-// Handlers returns the slice of SolaService entries managed by this controller.
-func (ctr *SolaController) Handlers() []*SolaService {
-
-	return ctr.handlers
 }

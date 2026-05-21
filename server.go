@@ -10,6 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// runner implements the Runner interface and drives the application startup.
+// It holds the Gin engine, listening port, and registered modules.
+type runner struct {
+	Engine  *gin.Engine // underlying Gin engine
+	port    int         // TCP port to listen on
+	modules []Module    // registered modules
+}
+
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
 func (server *runner) Run() {
 	if server.port <= 0 {

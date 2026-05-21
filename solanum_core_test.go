@@ -35,12 +35,10 @@ func TestGinEngineAccess(t *testing.T) {
 
 // TestCorsIntegration checks that calling Cors does not panic.
 func TestCorsIntegration(t *testing.T) {
-	// Set Gin mode to test to avoid logs
 	gin.SetMode(gin.TestMode)
 	server := solanum.NewSolanum(
 		solanum.WithPort(5050),
 	)
-	// Should not panic
 	assert.NotPanics(t, func() {
 		server.Cors(
 			cors.WithUrls([]string{"*"}),

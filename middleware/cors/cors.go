@@ -1,9 +1,6 @@
 package cors
 
-import (
-	"log"
-	"strings"
-)
+import "log"
 
 // Default CORS settings
 var (
@@ -17,11 +14,7 @@ var (
 		"Access-Control-Request-Method",
 		"Access-Control-Request-Headers",
 	}
-	DefaultCredentials  = false
-	DefaultOriginalFunc = func(origin string) bool {
-		// Default origin function allows any localhost origin
-		return strings.Contains(origin, "://localhost")
-	}
+	DefaultCredentials = false
 )
 
 // Option defines configuration settings for Cross-Origin Resource Sharing (CORS).

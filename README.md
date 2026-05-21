@@ -100,7 +100,29 @@ Controllers define:
 No reflection-based routing, no annotations — just plain Go structures.
 
 
-### 3. Explicit Middleware Configuration
+### 3. Module-Level Middleware
+Each module supports **pre-middleware** (runs before the handler) and **post-middleware** (runs after the handler).
+
+```go
+module := solanum.NewModule(
+    solanum.WithUri("/users"),
+)
+
+// Pre-middleware: executed before the handler
+module.SetPreMiddlewares(authMiddleware, loggingMiddleware)
+
+// Post-middleware: executed after the handler
+module.SetPostMiddlewares(responseLogger)
+
+// You can also append individual middleware
+module.AddPreMiddleware(rateLimiter)
+module.AddPostMiddleware(metricsCollector)
+```
+
+The final handler chain for each route is: **pre-middlewares → handler → post-middlewares**.
+
+
+### 4. Application-Level CORS
 ```go
 import "github.com/annuums/solanum/middleware/cors"
 
@@ -110,7 +132,8 @@ server.Cors(
   cors.WithAllowCredentials(true),
 )
 ```
-Middleware is applied explicitly at the application level, making request behavior easy to reason about.
+CORS middleware is applied at the application level using functional options.
+Sensible defaults are provided for headers and methods when not specified.
 
 ---
 
@@ -168,12 +191,12 @@ Every step is explicit:
 No hidden wiring. No surprises.
 
 ### Examples & More
-👉 Learn by [Examples](./docs/examples/README.md)
+See the [Simple Example](./docs/examples/simple/README.md) for a minimal health-check server.
 
 ## Who Is This For?
 - Go developers who value explicit control flow
 - Teams building REST APIs or microservices with Gin
-- Pjects that want structure without heavy frameworks
-- ineers who prefer readable composition over implicit behavior
+- Projects that want structure without heavy frameworks
+- Engineers who prefer readable composition over implicit behavior
 
 If you believe that clarity beats convenience, Solanum is for you.

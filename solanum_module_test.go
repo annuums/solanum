@@ -12,7 +12,6 @@ import (
 )
 
 func init() {
-	// Set Gin to test mode to suppress logging
 	gin.SetMode(gin.TestMode)
 }
 
@@ -29,36 +28,33 @@ func TestMiddlewareChains(t *testing.T) {
 		solanum.WithUri("/"),
 	)
 
-	// Replace and count pre-middlewares
 	m.SetPreMiddlewares(func(c *gin.Context) {}, func(c *gin.Context) {})
 	assert.Len(t, m.PreMiddlewares(), 2)
 
-	// Append another pre-middleware
 	m.AddPreMiddleware(func(c *gin.Context) {})
 	assert.Len(t, m.PreMiddlewares(), 3)
 
-	// Replace and count post-middlewares
 	m.SetPostMiddlewares(func(c *gin.Context) {})
 	assert.Len(t, m.PostMiddlewares(), 1)
 
-	// Append another post-middleware
 	m.AddPostMiddleware(func(c *gin.Context) {})
 	assert.Len(t, m.PostMiddlewares(), 2)
 }
 
-// TestSetRoutes ensures routes work with no DI configured.
+// TestSetRoutes ensures routes are correctly registered and respond to requests.
 func TestSetRoutes(t *testing.T) {
 	r := gin.New()
-	// Standalone route to verify Gin works
-	r.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 
 	m := solanum.NewModule(
 		solanum.WithUri("/api"),
 	)
 	ctrl := solanum.NewController()
-	ctrl.SetHandlers(&solanum.SolaService{Uri: "/ping", Method: "GET", Handler: func(c *gin.Context) { c.String(http.StatusOK, "ok") }})
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:     "/ping",
+		Method:  "GET",
+		Handler: func(c *gin.Context) { c.String(http.StatusOK, "ok") },
+	})
 	m.AddControllers(ctrl)
-	// Register module routes without dependencies
 	m.SetRoutes(r.Group("/api"))
 
 	rec := httptest.NewRecorder()

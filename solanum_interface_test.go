@@ -15,7 +15,5 @@ var (
 	)
 )
 
-// Dummy test to ensure this file is included in test suite.
-func TestInterfaceCompliance(t *testing.T) {
-	// This test passes if the code compiles successfully.
-}
+// TestInterfaceCompliance passes if the code compiles successfully.
+func TestInterfaceCompliance(t *testing.T) {}
