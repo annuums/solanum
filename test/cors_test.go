@@ -1,7 +1,8 @@
 package solanum_test
 
 import (
-	"github.com/annuums/solanum/util"
+	"github.com/annuums/solanum/middleware/cors"
+
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,11 +10,11 @@ import (
 
 // TestCorsOptionsDefaultValues validates defaults when no options are provided.
 func TestCorsOptionsDefaultValues(t *testing.T) {
-	op := util.CorsOptions()
+	op := cors.Options()
 
 	// Headers and Methods should pick up global defaults
-	assert.Equal(t, util.CorsDefaultHeaders, op.Headers)
-	assert.Equal(t, util.CorsDefaultMethods, op.Methods)
+	assert.Equal(t, cors.DefaultHeaders, op.Headers)
+	assert.Equal(t, cors.DefaultMethods, op.Methods)
 
 	// OriginFunc should allow all when no URLs set
 	assert.True(t, op.OriginFunc("https://random.com"))
@@ -25,13 +26,13 @@ func TestCorsOptionsCustomSettings(t *testing.T) {
 	headers := []string{"X-Test"}
 	methods := []string{"PATCH"}
 
-	op := util.CorsOptions(
-		util.WithUrls(urls),
-		util.WithHeaders(headers),
-		util.WithMethods(methods),
-		util.WithAllowCredentials(true),
-		util.WithOriginFunc(func(origin string) bool { return origin == "ok" }),
-		util.WithMaxAge(5),
+	op := cors.Options(
+		cors.WithUrls(urls),
+		cors.WithHeaders(headers),
+		cors.WithMethods(methods),
+		cors.WithAllowCredentials(true),
+		cors.WithOriginFunc(func(origin string) bool { return origin == "ok" }),
+		cors.WithMaxAge(5),
 	)
 
 	assert.Equal(t, urls, op.Urls)

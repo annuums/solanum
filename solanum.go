@@ -40,7 +40,7 @@ type (
 	runner struct {
 		Engine  *gin.Engine // underlying Gin engine
 		port    int         // TCP port to listen on
-		modules []*Module   // pointers to registered modules
+		modules []Module    // pointers to registered modules
 	}
 )
 
@@ -92,15 +92,13 @@ func (m *SolaModule) PostMiddlewares() []gin.HandlerFunc {
 // SetPreMiddlewares replaces the pre-handler middleware chain with the provided list.
 func (m *SolaModule) SetPreMiddlewares(middlewares ...gin.HandlerFunc) {
 
-	m.preMiddlewares = make([]gin.HandlerFunc, 0)
-	m.preMiddlewares = append(m.preMiddlewares, middlewares...)
+	m.preMiddlewares = middlewares
 }
 
 // SetPostMiddlewares replaces the post-handler middleware chain with the provided list.
 func (m *SolaModule) SetPostMiddlewares(middlewares ...gin.HandlerFunc) {
 
-	m.postMiddlewares = make([]gin.HandlerFunc, 0)
-	m.postMiddlewares = append(m.postMiddlewares, middlewares...)
+	m.postMiddlewares = middlewares
 }
 
 // AddPreMiddleware appends a single middleware to the pre-handler chain.
@@ -124,26 +122,26 @@ func (m *SolaModule) Controllers() []Controller {
 // SetControllers registers one or more Controller implementations for this module.
 func (m *SolaModule) SetControllers(c ...Controller) {
 
+	m.controllers = c
+}
+
+// AddControllers appends one or more Controller implementations to this module.
+func (m *SolaModule) AddControllers(c ...Controller) {
+
 	m.controllers = append(m.controllers, c...)
 }
 
-// SetRoutes registers the module's routes, middleware, and DI middleware on the given RouterGroup.
-// It applies DI if dependencies are defined, then mounts each SolaService handler with pre- and post-middleware.
+// SetRoutes registers the module's routes and middleware on the given RouterGroup.
+// It mounts each SolaService handler with pre- and post-middleware.
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
-
-	// Iterate controllers and their services
 	for _, c := range m.controllers {
-
-		ctr, ok := c.(*SolaController)
-		if !ok {
-
-			panic(fmt.Sprintf("controller is not *SolaController: %T", c))
-		}
-
-		for _, svc := range ctr.handlers {
+		for _, svc := range c.Handlers() {
 
 			// pre → handler → post
-			chain := append(append(m.preMiddlewares, svc.Handler), m.postMiddlewares...)
+			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+1+len(m.postMiddlewares))
+			chain = append(chain, m.preMiddlewares...)
+			chain = append(chain, svc.Handler)
+			chain = append(chain, m.postMiddlewares...)
 			router.Handle(svc.Method, svc.Uri, chain...)
 		}
 	}
@@ -163,16 +161,10 @@ func NewController() *SolaController {
 	}
 }
 
-// SetHandlers appends one or more SolaService entries to the controller's handler list.
+// SetHandlers replaces the controller's handler list with the provided entries.
 func (ctr *SolaController) SetHandlers(handlers ...*SolaService) {
 
-	if ctr.handlers == nil {
-
-		ctr.handlers = make([]*SolaService, 0)
-	}
-
-	// ctr.handlers = append(ctr.handlers, *svc)
-	ctr.handlers = append(ctr.handlers, handlers...)
+	ctr.handlers = handlers
 }
 
 // Handlers returns the slice of SolaService entries managed by this controller.

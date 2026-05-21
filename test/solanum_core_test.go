@@ -1,26 +1,35 @@
 package solanum_test
 
 import (
-	"github.com/annuums/solanum/util"
 	"testing"
+
+	"github.com/annuums/solanum/middleware/cors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	solanum "github.com/annuums/solanum"
+	"github.com/annuums/solanum"
 )
 
-// TestNewSolanumSingleton ensures NewSolanum returns the same Runner instance.
-func TestNewSolanumSingleton(t *testing.T) {
-	first := solanum.NewSolanum(1234)
-	second := solanum.NewSolanum(5678)
-	assert.Equal(t, first, second)
+// TestNewSolanumReturnsNewRunner ensures each NewSolanum call returns a distinct Runner.
+func TestNewSolanumReturnsNewRunner(t *testing.T) {
+	first := solanum.NewSolanum(
+		solanum.WithPort(1234),
+	)
+	second := solanum.NewSolanum(
+		solanum.WithPort(5678),
+	)
+	assert.NotEqual(t, first, second)
+	assert.Equal(t, 1234, first.Port())
+	assert.Equal(t, 5678, second.Port())
 }
 
 // TestGinEngineAccess verifies that GinEngine returns a non-nil *gin.Engine.
 func TestGinEngineAccess(t *testing.T) {
-	app := *solanum.NewSolanum(5050)
-	eng := app.GinEngine()
+	server := solanum.NewSolanum(
+		solanum.WithPort(5050),
+	)
+	eng := server.GinEngine()
 	assert.NotNil(t, eng)
 }
 
@@ -28,12 +37,14 @@ func TestGinEngineAccess(t *testing.T) {
 func TestCorsIntegration(t *testing.T) {
 	// Set Gin mode to test to avoid logs
 	gin.SetMode(gin.TestMode)
-	app := *solanum.NewSolanum(5050)
+	server := solanum.NewSolanum(
+		solanum.WithPort(5050),
+	)
 	// Should not panic
 	assert.NotPanics(t, func() {
-		app.Cors(
-			util.WithUrls([]string{"*"}),
-			util.WithMethods([]string{"GET"}),
+		server.Cors(
+			cors.WithUrls([]string{"*"}),
+			cors.WithMethods([]string{"GET"}),
 		)
 	})
 }

@@ -1,4 +1,4 @@
-package util
+package cors
 
 import (
 	"log"
@@ -7,8 +7,8 @@ import (
 
 // Default CORS settings
 var (
-	CorsDefaultMethods = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
-	CorsDefaultHeaders = []string{
+	DefaultMethods = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
+	DefaultHeaders = []string{
 		"Access-Control-Allow-Headers",
 		"Origin",
 		"Accept",
@@ -17,15 +17,15 @@ var (
 		"Access-Control-Request-Method",
 		"Access-Control-Request-Headers",
 	}
-	CorsDefaultCredentials  = false
-	CorsDefaultOriginalFunc = func(origin string) bool {
+	DefaultCredentials  = false
+	DefaultOriginalFunc = func(origin string) bool {
 		// Default origin function allows any localhost origin
 		return strings.Contains(origin, "://localhost")
 	}
 )
 
-// CorsOption defines configuration settings for Cross-Origin Resource Sharing (CORS).
-type CorsOption struct {
+// Option defines configuration settings for Cross-Origin Resource Sharing (CORS).
+type Option struct {
 	// Urls list of allowed origin URLs
 	Urls []string
 
@@ -46,80 +46,80 @@ type CorsOption struct {
 }
 
 // WithUrls sets the allowed origin URLs for CORS.
-func WithUrls(urls []string) func(*CorsOption) {
+func WithUrls(urls []string) func(*Option) {
 
-	return func(s *CorsOption) {
+	return func(s *Option) {
 		s.Urls = urls
 	}
 }
 
 // WithHeaders sets the allowed HTTP headers for CORS.
-func WithHeaders(headers []string) func(*CorsOption) {
+func WithHeaders(headers []string) func(*Option) {
 
-	return func(s *CorsOption) {
+	return func(s *Option) {
 		s.Headers = headers
 	}
 }
 
 // WithMethods sets the allowed HTTP methods for CORS.
-func WithMethods(methods []string) func(*CorsOption) {
+func WithMethods(methods []string) func(*Option) {
 
-	return func(s *CorsOption) {
+	return func(s *Option) {
 		s.Methods = methods
 	}
 }
 
 // WithAllowCredentials enables or disables transmission of credentials (cookies) in CORS requests.
-func WithAllowCredentials(allowCredentials bool) func(*CorsOption) {
+func WithAllowCredentials(allowCredentials bool) func(*Option) {
 
-	return func(s *CorsOption) {
+	return func(s *Option) {
 		s.AllowCredentials = allowCredentials
 	}
 }
 
 // WithOriginFunc sets a custom origin validation function for CORS.
-func WithOriginFunc(originFunc func(origin string) bool) func(*CorsOption) {
+func WithOriginFunc(originFunc func(origin string) bool) func(*Option) {
 
-	return func(s *CorsOption) {
+	return func(s *Option) {
 		s.OriginFunc = originFunc
 	}
 }
 
 // WithMaxAge sets the maximum age (in hours) for CORS preflight requests to be cached.
-func WithMaxAge(maxAge int) func(*CorsOption) {
+func WithMaxAge(maxAge int) func(*Option) {
 
-	return func(s *CorsOption) {
+	return func(s *Option) {
 		s.MaxAge = maxAge
 	}
 }
 
-// CorsOptions applies a list of option functions to a CorsOption instance and
+// Options applies a list of option functions to a CorsOption instance and
 // fills in defaults for any missing settings.
-func CorsOptions(opts ...func(*CorsOption)) *CorsOption {
+func Options(opts ...func(*Option)) *Option {
 
-	var options CorsOption
+	var options Option
 	for _, opt := range opts {
 
 		opt(&options)
 	}
 
 	// Use default headers if none specified
-	if options.Headers == nil || len(options.Headers) == 0 {
+	if len(options.Headers) == 0 {
 
-		options.Headers = CorsDefaultHeaders
+		options.Headers = DefaultHeaders
 	}
 
 	// Use default methods if none specified
-	if options.Methods == nil || len(options.Methods) == 0 {
+	if len(options.Methods) == 0 {
 
-		options.Methods = CorsDefaultMethods
+		options.Methods = DefaultMethods
 	}
 
 	// Use default origin validation function
 	if options.OriginFunc == nil {
 
 		// If no URLs provided, allow all origins
-		if options.Urls == nil || len(options.Urls) == 0 {
+		if len(options.Urls) == 0 {
 
 			log.Println("Both urls and originfunc for cors are not defined. allowing all origins...")
 			options.OriginFunc = func(origin string) bool {

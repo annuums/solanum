@@ -10,7 +10,9 @@ import (
 var (
 	_ solanum.Module     = (*solanum.SolaModule)(nil)
 	_ solanum.Controller = (*solanum.SolaController)(nil)
-	_ solanum.Runner     = *solanum.NewSolanum(5050)
+	_ solanum.Runner     = solanum.NewSolanum(
+		solanum.WithPort(5050),
+	)
 )
 
 // Dummy test to ensure this file is included in test suite.

@@ -1,7 +1,7 @@
 package solanum
 
 import (
-	"github.com/annuums/solanum/util"
+	"github.com/annuums/solanum/middleware/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +12,7 @@ type (
 		// Handlers returns the slice of service definitions this controller manages.
 		Handlers() []*SolaService
 
-		// SetHandlers adds one or more SolaService entries to the controller.
+		// SetHandlers replaces the controller's service handlers with the provided list.
 		SetHandlers(handler ...*SolaService)
 	}
 
@@ -40,8 +40,11 @@ type (
 		// Controllers returns the slice of Controller implementations in this module.
 		Controllers() []Controller
 
-		// SetControllers registers one or more Controller implementations.
+		// SetControllers replaces all Controller implementations for this module.
 		SetControllers(c ...Controller)
+
+		// AddControllers appends one or more Controller implementations to this module.
+		AddControllers(c ...Controller)
 
 		// SetRoutes binds the module's controllers, middleware, and routes onto a RouterGroup.
 		SetRoutes(router *gin.RouterGroup)
@@ -60,7 +63,7 @@ type (
 		InitGlobalMiddlewares()
 
 		// Modules returns a slice of pointers to registered Modules.
-		Modules() []*Module
+		Modules() []Module
 
 		// SetModules registers one or more Modules with the Runner.
 		SetModules(m ...Module)
@@ -72,7 +75,7 @@ type (
 		Port() int
 
 		// Cors applies CORS configuration to the Gin engine using functional options.
-		Cors(opts ...func(*util.CorsOption))
+		Cors(opts ...func(*cors.Option))
 
 		// Run boots the HTTP server, initializing modules and listening on the configured port.
 		Run()
