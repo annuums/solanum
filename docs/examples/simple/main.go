@@ -22,7 +22,7 @@ func main() {
 			},
 		},
 	)
-	pingModule.SetControllers(ctrl)
+	pingModule.AddControllers(ctrl)
 
 	server := solanum.NewSolanum(
 		solanum.WithPort(5050),

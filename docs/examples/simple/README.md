@@ -5,7 +5,12 @@ A minimal server that mounts a health-check endpoint using the built-in module.
 ```go
 package main
 
-import "github.com/annuums/solanum"
+import (
+	"net/http"
+
+	"github.com/annuums/solanum"
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 
