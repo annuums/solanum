@@ -102,15 +102,17 @@ func (m *SolaModule) AddControllers(c ...Controller) {
 }
 
 // SetRoutes registers the module's routes and middleware on the given RouterGroup.
-// The final handler chain per route is: pre-middlewares → handler → post-middlewares.
+// The final handler chain per route is: module pre-middlewares → service PreHandlers → handler → service PostHandlers → module post-middlewares.
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 
 	for _, c := range m.controllers {
 		for _, svc := range c.Handlers() {
 
-			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+1+len(m.postMiddlewares))
+			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+len(svc.PreHandlers)+1+len(svc.PostHandlers)+len(m.postMiddlewares))
 			chain = append(chain, m.preMiddlewares...)
+			chain = append(chain, svc.PreHandlers...)
 			chain = append(chain, svc.Handler)
+			chain = append(chain, svc.PostHandlers...)
 			chain = append(chain, m.postMiddlewares...)
 			router.Handle(svc.Method, svc.Uri, chain...)
 		}
