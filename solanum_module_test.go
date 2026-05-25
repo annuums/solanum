@@ -41,6 +41,69 @@ func TestMiddlewareChains(t *testing.T) {
 	assert.Len(t, m.PostMiddlewares(), 2)
 }
 
+// TestServiceHandlerExecutionOrder asserts the full middleware execution order:
+// module pre → service pre → handler → service post → module post.
+func TestServiceHandlerExecutionOrder(t *testing.T) {
+
+	var order []string
+	r := gin.New()
+
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	m.SetPreMiddlewares(func(c *gin.Context) { order = append(order, "module-pre") })
+	m.SetPostMiddlewares(func(c *gin.Context) { order = append(order, "module-post") })
+
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:    "/order",
+		Method: http.MethodGet,
+		PreHandlers: []gin.HandlerFunc{
+			func(c *gin.Context) { order = append(order, "service-pre") },
+		},
+		Handler: func(c *gin.Context) {
+			order = append(order, "handler")
+			c.String(http.StatusOK, "ok")
+		},
+		PostHandlers: []gin.HandlerFunc{
+			func(c *gin.Context) { order = append(order, "service-post") },
+		},
+	})
+	m.AddControllers(ctrl)
+	m.SetRoutes(r.Group("/api"))
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/order", nil)
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, []string{"module-pre", "service-pre", "handler", "service-post", "module-post"}, order)
+}
+
+// TestServiceHandlerNilPrePostHandlers ensures a SolaService with no PreHandlers/PostHandlers
+// behaves identically to the original single-handler registration.
+func TestServiceHandlerNilPrePostHandlers(t *testing.T) {
+
+	r := gin.New()
+
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:    "/nil",
+		Method: http.MethodGet,
+		Handler: func(c *gin.Context) {
+			c.String(http.StatusOK, "ok")
+		},
+	})
+	m.AddControllers(ctrl)
+	m.SetRoutes(r.Group("/api"))
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/nil", nil)
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "ok", rec.Body.String())
+}
+
 // TestSetRoutes ensures routes are correctly registered and respond to requests.
 func TestSetRoutes(t *testing.T) {
 	r := gin.New()
