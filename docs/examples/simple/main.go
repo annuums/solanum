@@ -1,9 +1,10 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/annuums/solanum"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func main() {
@@ -17,8 +18,8 @@ func main() {
 		&solanum.SolaService{
 			Uri:    "",
 			Method: http.MethodGet,
-			Handler: func(c *gin.Context) {
-				c.String(http.StatusOK, "pong")
+			Handler: func(ctx *gin.Context) {
+				ctx.String(http.StatusOK, "pong")
 			},
 		},
 	)
