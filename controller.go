@@ -22,9 +22,9 @@ type SolaService struct {
 	// Handler is the Gin handler function to execute.
 	Handler gin.HandlerFunc
 
-	// PostHandlers are middleware functions intended to run later in this route's Gin
-	// handler chain. They execute only if Handler, or a wrapper around it, calls
-	// ctx.Next().
+	// PostHandlers are middleware functions to run after Handler for this route only.
+	// Gin executes all handlers in the chain sequentially; ctx.Next() is not required.
+	// Use ctx.Abort() in any handler to stop further execution.
 	PostHandlers []gin.HandlerFunc
 }
 
