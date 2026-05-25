@@ -16,8 +16,14 @@ type SolaService struct {
 	// Method is the HTTP method to bind (GET, POST, etc.).
 	Method string
 
+	// PreHandlers are middleware functions to run before Handler for this route only.
+	PreHandlers []gin.HandlerFunc
+
 	// Handler is the Gin handler function to execute.
 	Handler gin.HandlerFunc
+
+	// PostHandlers are middleware functions to run after Handler for this route only.
+	PostHandlers []gin.HandlerFunc
 }
 
 // NewController constructs an empty SolaController ready to receive handlers.
