@@ -108,9 +108,11 @@ func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 	for _, c := range m.controllers {
 		for _, svc := range c.Handlers() {
 
-			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+1+len(m.postMiddlewares))
+			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+len(svc.PreHandlers)+1+len(svc.PostHandlers)+len(m.postMiddlewares))
 			chain = append(chain, m.preMiddlewares...)
+			chain = append(chain, svc.PreHandlers...)
 			chain = append(chain, svc.Handler)
+			chain = append(chain, svc.PostHandlers...)
 			chain = append(chain, m.postMiddlewares...)
 			router.Handle(svc.Method, svc.Uri, chain...)
 		}
