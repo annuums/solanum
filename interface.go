@@ -31,7 +31,8 @@ type (
 		// SetPreMiddlewares replaces the entire pre-handler middleware chain.
 		SetPreMiddlewares(middlewares ...gin.HandlerFunc)
 
-		// PostMiddlewares returns middleware to run after each handler.
+		// PostMiddlewares returns middleware to run after each handler,
+		// even when the handler aborted the request.
 		PostMiddlewares() []gin.HandlerFunc
 
 		// AddPostMiddleware appends a middleware to the post-handler chain.

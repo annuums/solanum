@@ -156,3 +156,65 @@ func TestSetRoutesValidatesServices(t *testing.T) {
 		})
 	}
 }
+
+// TestPostHandlersRunWhenAborted ensures post handlers still run on error paths.
+func TestPostHandlersRunWhenAborted(t *testing.T) {
+
+	var order []string
+	var abortedSeen bool
+	r := gin.New()
+
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	m.AddPostMiddleware(func(c *gin.Context) {
+		order = append(order, "module-post")
+		abortedSeen = c.IsAborted()
+	})
+
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:    "/fail",
+		Method: http.MethodGet,
+		Handler: func(c *gin.Context) {
+			order = append(order, "handler")
+			c.AbortWithStatus(http.StatusInternalServerError)
+		},
+		PostHandlers: []gin.HandlerFunc{
+			func(c *gin.Context) { order = append(order, "service-post") },
+		},
+	})
+	m.AddControllers(ctrl)
+	m.SetRoutes(r.Group("/api"))
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/fail", nil))
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Equal(t, []string{"handler", "service-post", "module-post"}, order)
+	assert.True(t, abortedSeen)
+}
+
+// TestPostHandlersRunWhenPreAborts ensures post handlers run when a pre-middleware aborts.
+func TestPostHandlersRunWhenPreAborts(t *testing.T) {
+
+	var order []string
+	r := gin.New()
+
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	m.AddPreMiddleware(func(c *gin.Context) { c.AbortWithStatus(http.StatusUnauthorized) })
+	m.AddPostMiddleware(func(c *gin.Context) { order = append(order, "module-post") })
+
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:     "/secret",
+		Method:  http.MethodGet,
+		Handler: func(c *gin.Context) { order = append(order, "handler") },
+	})
+	m.AddControllers(ctrl)
+	m.SetRoutes(r.Group("/api"))
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/secret", nil))
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Equal(t, []string{"module-post"}, order)
+}
