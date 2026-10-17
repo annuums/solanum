@@ -11,63 +11,31 @@ import (
 type (
 
 	// Controller declares a set of service handlers for a logical grouping of routes.
+	// SolaController is the default implementation.
 	Controller interface {
 		// Handlers returns the slice of service definitions this controller manages.
 		Handlers() []*SolaService
-
-		// SetHandlers replaces the controller's service handlers with the provided list.
-		SetHandlers(handler ...*SolaService)
 	}
 
-	// Module represents a self-contained HTTP module with its own URI prefix,
-	// middleware layers, controllers, and dependencies.
+	// Module represents a self-contained HTTP module mounted under its own URI prefix.
+	// SolaModule is the default implementation with controllers and pre/post middlewares.
 	Module interface {
-		// PreMiddlewares returns middleware to run before each handler.
-		PreMiddlewares() []gin.HandlerFunc
-
-		// AddPreMiddleware appends a middleware to the pre-handler chain.
-		AddPreMiddleware(middleware gin.HandlerFunc)
-
-		// SetPreMiddlewares replaces the entire pre-handler middleware chain.
-		SetPreMiddlewares(middlewares ...gin.HandlerFunc)
-
-		// PostMiddlewares returns middleware to run after each handler,
-		// even when the handler aborted the request.
-		PostMiddlewares() []gin.HandlerFunc
-
-		// AddPostMiddleware appends a middleware to the post-handler chain.
-		AddPostMiddleware(middleware gin.HandlerFunc)
-
-		// SetPostMiddlewares replaces the entire post-handler middleware chain.
-		SetPostMiddlewares(middlewares ...gin.HandlerFunc)
-
-		// Controllers returns the slice of Controller implementations in this module.
-		Controllers() []Controller
-
-		// SetControllers replaces all Controller implementations for this module.
-		SetControllers(c ...Controller)
-
-		// AddControllers appends one or more Controller implementations to this module.
-		AddControllers(c ...Controller)
+		// Uri returns the base URI path for this module (e.g., "/users").
+		Uri() string
 
 		// SetRoutes binds the module's controllers, middleware, and routes onto a RouterGroup.
 		SetRoutes(router *gin.RouterGroup)
-
-		// Uri returns the base URI path for this module (e.g., "/users").
-		Uri() string
 	}
 
 	// Runner is the application entrypoint interface for Solanum.
-	// It manages module initialization, global middlewares, CORS, and server start.
+	// It manages module initialization, CORS, and server start.
+	// Global middlewares are configured with NewSolanum options (WithMiddlewares, WithRecovery).
 	Runner interface {
 		// InitModules sets up all registered modules and their routes (idempotent).
 		InitModules()
 
 		// Handler initializes module routes (once) and returns an http.Handler for tests or custom servers.
 		Handler() http.Handler
-
-		// InitGlobalMiddlewares registers any application-wide middleware.
-		InitGlobalMiddlewares()
 
 		// Modules returns a slice of pointers to registered Modules.
 		Modules() []Module

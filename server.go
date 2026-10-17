@@ -161,9 +161,9 @@ func (server *Server) Modules() []Module {
 	return server.modules
 }
 
-// InitGlobalMiddlewares registers the recovery middleware followed by
+// initGlobalMiddlewares registers the recovery middleware followed by
 // the application-wide middlewares configured with WithMiddlewares.
-func (server *Server) InitGlobalMiddlewares() {
+func (server *Server) initGlobalMiddlewares() {
 	if server.recovery != nil {
 
 		server.engine.Use(server.recovery)
@@ -326,6 +326,6 @@ func NewSolanum(opts ...Option) *Server {
 	}
 
 	s.engine = gin.New()
-	s.InitGlobalMiddlewares()
+	s.initGlobalMiddlewares()
 	return s
 }
