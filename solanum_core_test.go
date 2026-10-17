@@ -1,6 +1,7 @@
 package solanum_test
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -133,4 +134,63 @@ func TestCorsMaxAge(t *testing.T) {
 	server.GinEngine().ServeHTTP(rec, req)
 
 	assert.Equal(t, "600", rec.Header().Get("Access-Control-Max-Age"))
+}
+
+// TestRecoveryEnabledByDefault verifies a panicking handler yields 500 instead of crashing.
+func TestRecoveryEnabledByDefault(t *testing.T) {
+
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:     "/panic",
+		Method:  http.MethodGet,
+		Handler: func(c *gin.Context) { panic("boom") },
+	})
+	m.AddControllers(ctrl)
+
+	server := solanum.NewSolanum(
+		solanum.WithPort(5050),
+		solanum.WithRecovery(gin.RecoveryWithWriter(io.Discard)),
+	)
+	server.SetModules(m)
+	server.InitModules()
+
+	rec := httptest.NewRecorder()
+	assert.NotPanics(t, func() {
+		server.GinEngine().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/panic", nil))
+	})
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+}
+
+// TestGlobalMiddlewaresRunBeforeModules verifies WithMiddlewares runs ahead of module middlewares.
+func TestGlobalMiddlewaresRunBeforeModules(t *testing.T) {
+
+	var order []string
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	m.AddPreMiddleware(func(c *gin.Context) { order = append(order, "module-pre") })
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:     "/ping",
+		Method:  http.MethodGet,
+		Handler: func(c *gin.Context) { order = append(order, "handler") },
+	})
+	m.AddControllers(ctrl)
+
+	server := solanum.NewSolanum(
+		solanum.WithPort(5050),
+		solanum.WithMiddlewares(func(c *gin.Context) { order = append(order, "global") }),
+	)
+	server.SetModules(m)
+	server.InitModules()
+	server.GinEngine().ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/api/ping", nil))
+
+	assert.Equal(t, []string{"global", "module-pre", "handler"}, order)
+}
+
+// TestWithGinMode verifies the gin mode option is applied.
+func TestWithGinMode(t *testing.T) {
+
+	defer gin.SetMode(gin.TestMode)
+	solanum.NewSolanum(solanum.WithGinMode(gin.ReleaseMode))
+	assert.Equal(t, gin.ReleaseMode, gin.Mode())
 }

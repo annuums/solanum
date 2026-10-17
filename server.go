@@ -12,9 +12,12 @@ import (
 // Server implements the Runner interface and drives the application startup.
 // It holds the Gin engine, listening port, and registered modules.
 type Server struct {
-	engine  *gin.Engine // underlying Gin engine
-	port    int         // TCP port to listen on
-	modules []Module    // registered modules
+	engine      *gin.Engine       // underlying Gin engine
+	port        int               // TCP port to listen on
+	modules     []Module          // registered modules
+	ginMode     string            // gin mode applied before the engine is created
+	recovery    gin.HandlerFunc   // panic recovery middleware (nil disables it)
+	middlewares []gin.HandlerFunc // application-wide middlewares
 }
 
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
@@ -59,14 +62,15 @@ func (server *Server) Modules() []Module {
 	return server.modules
 }
 
-// InitGlobalMiddlewares is a placeholder for registering application-wide middlewares
-// such as logging, authentication, and authorization. Implement as needed.
+// InitGlobalMiddlewares registers the recovery middleware followed by
+// the application-wide middlewares configured with WithMiddlewares.
 func (server *Server) InitGlobalMiddlewares() {
-	//* 1. Logger, ...
+	if server.recovery != nil {
 
-	//* 2. Authentication, ...
+		server.engine.Use(server.recovery)
+	}
 
-	//* 3. Authorization, ...
+	server.engine.Use(server.middlewares...)
 }
 
 // Cors applies configured CORS settings to the Gin engine using the cors middleware.
@@ -115,12 +119,37 @@ func WithPort(port int) Option {
 	}
 }
 
+// WithGinMode sets the global gin mode (gin.DebugMode, gin.ReleaseMode, gin.TestMode)
+// before the engine is created. Note that gin mode is process-wide.
+func WithGinMode(mode string) Option {
+	return func(r *Server) {
+		r.ginMode = mode
+	}
+}
+
+// WithRecovery replaces the default gin.Recovery() middleware (e.g. with gin.CustomRecovery).
+// Passing nil disables panic recovery.
+func WithRecovery(recovery gin.HandlerFunc) Option {
+	return func(r *Server) {
+		r.recovery = recovery
+	}
+}
+
+// WithMiddlewares appends application-wide middlewares (logger, authentication, ...)
+// that run before every module's middlewares.
+func WithMiddlewares(middlewares ...gin.HandlerFunc) Option {
+	return func(r *Server) {
+		r.middlewares = append(r.middlewares, middlewares...)
+	}
+}
+
 // NewSolanum creates and returns a new Server configured with the given options.
+// gin.Recovery() is registered by default; see WithRecovery.
 func NewSolanum(opts ...Option) *Server {
 
 	s := &Server{
-		engine: gin.New(),
-		port:   0,
+		port:     0,
+		recovery: gin.Recovery(),
 	}
 
 	for _, opt := range opts {
@@ -130,6 +159,12 @@ func NewSolanum(opts ...Option) *Server {
 		}
 	}
 
+	if s.ginMode != "" {
+
+		gin.SetMode(s.ginMode)
+	}
+
+	s.engine = gin.New()
 	s.InitGlobalMiddlewares()
 	return s
 }
