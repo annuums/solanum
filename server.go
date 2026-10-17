@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"log/slog"
 
 	cors2 "github.com/annuums/solanum/middleware/cors"
 
@@ -18,6 +19,7 @@ type Server struct {
 	ginMode     string            // gin mode applied before the engine is created
 	recovery    gin.HandlerFunc   // panic recovery middleware (nil disables it)
 	middlewares []gin.HandlerFunc // application-wide middlewares
+	logger      *slog.Logger      // framework logger
 }
 
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
@@ -30,7 +32,7 @@ func (server *Server) Run() {
 	server.InitModules()
 	addr := fmt.Sprintf(":%d", server.port)
 
-	fmt.Printf("Solanum is running on %s\n", addr)
+	server.logger.Info("solanum is running", "addr", addr)
 	if err := server.engine.Run(addr); err != nil {
 
 		panic("fail to run server on addr :: " + addr + " :: " + err.Error())
@@ -40,7 +42,7 @@ func (server *Server) Run() {
 // InitModules sets up routing groups for each Module and applies their routes.
 func (server *Server) InitModules() {
 
-	fmt.Printf("Initialize Modules...\n")
+	server.logger.Debug("initializing modules", "count", len(server.modules))
 	for _, m := range server.modules {
 
 		m.SetRoutes(
@@ -82,6 +84,11 @@ func (server *Server) Cors(opts ...func(*cors2.Option)) {
 	if err := options.Validate(); err != nil {
 
 		panic(err.Error())
+	}
+
+	if options.AllowsAllOrigins() {
+
+		server.logger.Warn("cors allows all origins; set cors.WithUrls or cors.WithOriginFunc to restrict them")
 	}
 
 	server.engine.Use(
@@ -143,6 +150,19 @@ func WithMiddlewares(middlewares ...gin.HandlerFunc) Option {
 	}
 }
 
+// WithLogger sets the logger used by the framework itself (defaults to slog.Default()).
+// Passing nil silences framework logs.
+func WithLogger(logger *slog.Logger) Option {
+	return func(r *Server) {
+		if logger == nil {
+
+			logger = slog.New(slog.DiscardHandler)
+		}
+
+		r.logger = logger
+	}
+}
+
 // NewSolanum creates and returns a new Server configured with the given options.
 // gin.Recovery() is registered by default; see WithRecovery.
 func NewSolanum(opts ...Option) *Server {
@@ -150,6 +170,7 @@ func NewSolanum(opts ...Option) *Server {
 	s := &Server{
 		port:     0,
 		recovery: gin.Recovery(),
+		logger:   slog.Default(),
 	}
 
 	for _, opt := range opts {

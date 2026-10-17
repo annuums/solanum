@@ -1,7 +1,9 @@
 package solanum_test
 
 import (
+	"bytes"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -193,4 +195,19 @@ func TestWithGinMode(t *testing.T) {
 	defer gin.SetMode(gin.TestMode)
 	solanum.NewSolanum(solanum.WithGinMode(gin.ReleaseMode))
 	assert.Equal(t, gin.ReleaseMode, gin.Mode())
+}
+
+// TestWithLoggerReceivesFrameworkLogs verifies framework logs go to the configured logger.
+func TestWithLoggerReceivesFrameworkLogs(t *testing.T) {
+
+	var buf bytes.Buffer
+	server := solanum.NewSolanum(
+		solanum.WithLogger(slog.New(slog.NewTextHandler(&buf, nil))),
+	)
+	server.Cors()
+	assert.Contains(t, buf.String(), "cors allows all origins")
+
+	assert.NotPanics(t, func() {
+		solanum.NewSolanum(solanum.WithLogger(nil)).Cors()
+	})
 }
