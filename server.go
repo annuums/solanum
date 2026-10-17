@@ -72,9 +72,14 @@ func (server *runner) InitGlobalMiddlewares() {
 
 // Cors applies configured CORS settings to the Gin engine using the cors middleware.
 // Accepts functional options for customizing allowed origins, methods, headers, etc.
+// It panics when the options are insecure (e.g. credentials with all origins).
 func (server *runner) Cors(opts ...func(*cors2.Option)) {
 
 	options := cors2.Options(opts...)
+	if err := options.Validate(); err != nil {
+
+		panic(err.Error())
+	}
 
 	server.Engine.Use(
 		cors.New(

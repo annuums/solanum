@@ -75,6 +75,7 @@ type (
 		Port() int
 
 		// Cors applies CORS configuration to the Gin engine using functional options.
+		// It panics when the options are insecure (e.g. credentials with all origins).
 		Cors(opts ...func(*cors.Option))
 
 		// Run boots the HTTP server, initializing modules and listening on the configured port.

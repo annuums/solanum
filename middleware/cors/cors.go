@@ -1,6 +1,9 @@
 package cors
 
-import "log"
+import "errors"
+
+// AllowAllOrigins is the wildcard origin that permits every origin.
+const AllowAllOrigins = "*"
 
 // Default CORS settings
 var (
@@ -88,6 +91,8 @@ func WithMaxAge(maxAge int) func(*Option) {
 
 // Options applies a list of option functions to a CorsOption instance and
 // fills in defaults for any missing settings.
+// When neither urls nor originFunc is configured, all origins are allowed with the '*' wildcard
+// (the request origin is never reflected).
 func Options(opts ...func(*Option)) *Option {
 
 	var options Option
@@ -108,40 +113,35 @@ func Options(opts ...func(*Option)) *Option {
 		options.Methods = DefaultMethods
 	}
 
-	// Use default origin validation function
-	if options.OriginFunc == nil {
+	// Allow all origins only when neither urls nor originFunc is configured
+	if options.OriginFunc == nil && len(options.Urls) == 0 {
 
-		// If no URLs provided, allow all origins
-		if len(options.Urls) == 0 {
-
-			log.Println("Both urls and originfunc for cors are not defined. allowing all origins...")
-			options.OriginFunc = func(origin string) bool {
-
-				return true
-			}
-		} else {
-
-			// Restrict to configured URLs or wildcard
-			options.OriginFunc = func(origin string) bool {
-
-				// '*' wildcard allows all origins
-				if len(options.Urls) == 1 && options.Urls[0] == "*" {
-
-					return true
-				}
-
-				// Permit origin if it matches one in the list
-				for _, allowed := range options.Urls {
-
-					if origin == allowed {
-						return true
-					}
-				}
-
-				return false
-			}
-		}
+		options.Urls = []string{AllowAllOrigins}
 	}
 
 	return &options
+}
+
+// AllowsAllOrigins reports whether the option permits every origin via the '*' wildcard.
+func (o *Option) AllowsAllOrigins() bool {
+	for _, url := range o.Urls {
+		if url == AllowAllOrigins {
+
+			return true
+		}
+	}
+
+	return false
+}
+
+// Validate checks for insecure or conflicting CORS settings.
+// Credentials cannot be combined with the '*' wildcard: browsers reject such responses,
+// and reflecting arbitrary origins with credentials would expose authenticated endpoints.
+func (o *Option) Validate() error {
+	if o.AllowCredentials && o.AllowsAllOrigins() {
+
+		return errors.New("cors: AllowCredentials cannot be used with all origins ('*'); specify urls or originFunc")
+	}
+
+	return nil
 }

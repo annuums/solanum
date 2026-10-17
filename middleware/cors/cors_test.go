@@ -14,8 +14,36 @@ func TestCorsOptionsDefaultValues(t *testing.T) {
 	assert.Equal(t, cors.DefaultHeaders, op.Headers)
 	assert.Equal(t, cors.DefaultMethods, op.Methods)
 
-	// OriginFunc should allow all when no URLs set
-	assert.True(t, op.OriginFunc("https://random.com"))
+	// All origins are allowed with the wildcard (not by reflecting the origin) when no URLs set
+	assert.Nil(t, op.OriginFunc)
+	assert.Equal(t, []string{cors.AllowAllOrigins}, op.Urls)
+	assert.True(t, op.AllowsAllOrigins())
+	assert.NoError(t, op.Validate())
+}
+
+// TestCorsOptionsOriginFuncOnly keeps urls empty when only originFunc is configured.
+func TestCorsOptionsOriginFuncOnly(t *testing.T) {
+
+	op := cors.Options(
+		cors.WithOriginFunc(func(origin string) bool { return origin == "https://ok.com" }),
+	)
+
+	assert.Empty(t, op.Urls)
+	assert.False(t, op.AllowsAllOrigins())
+}
+
+// TestCorsOptionsValidateCredentials rejects credentials combined with all origins.
+func TestCorsOptionsValidateCredentials(t *testing.T) {
+
+	assert.Error(t, cors.Options(cors.WithAllowCredentials(true)).Validate())
+	assert.Error(t, cors.Options(
+		cors.WithUrls([]string{"https://a.com", "*"}),
+		cors.WithAllowCredentials(true),
+	).Validate())
+	assert.NoError(t, cors.Options(
+		cors.WithUrls([]string{"https://a.com"}),
+		cors.WithAllowCredentials(true),
+	).Validate())
 }
 
 // TestCorsOptionsCustomSettings verifies each functional option overrides defaults.
