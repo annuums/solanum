@@ -2,7 +2,6 @@ package solanum
 
 import (
 	"fmt"
-	"time"
 
 	cors2 "github.com/annuums/solanum/middleware/cors"
 
@@ -89,7 +88,7 @@ func (server *runner) Cors(opts ...func(*cors2.Option)) {
 				AllowHeaders:     options.Headers,
 				AllowCredentials: options.AllowCredentials,
 				AllowOriginFunc:  options.OriginFunc,
-				MaxAge:           time.Duration(options.MaxAge) * time.Hour,
+				MaxAge:           options.MaxAge,
 			},
 		),
 	)

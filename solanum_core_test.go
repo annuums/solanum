@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/annuums/solanum/middleware/cors"
 
@@ -116,4 +117,20 @@ func TestCorsCredentialsWithUrls(t *testing.T) {
 
 	rec = corsRequest(t, server, "https://evil.example")
 	assert.Equal(t, http.StatusForbidden, rec.Code)
+}
+
+// TestCorsMaxAge verifies MaxAge is passed through as a duration on preflight responses.
+func TestCorsMaxAge(t *testing.T) {
+
+	server := newPingServer()
+	server.Cors(cors.WithMaxAge(10 * time.Minute))
+	server.InitModules()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodOptions, "/api/ping", nil)
+	req.Header.Set("Origin", "https://a.example")
+	req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+	server.GinEngine().ServeHTTP(rec, req)
+
+	assert.Equal(t, "600", rec.Header().Get("Access-Control-Max-Age"))
 }

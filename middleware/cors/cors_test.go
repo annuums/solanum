@@ -2,6 +2,7 @@ package cors_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/annuums/solanum/middleware/cors"
 	"github.com/stretchr/testify/assert"
@@ -66,7 +67,7 @@ func TestCorsOptionsCustomSettings(t *testing.T) {
 		cors.WithMethods(methods),
 		cors.WithAllowCredentials(true),
 		cors.WithOriginFunc(func(origin string) bool { return origin == "ok" }),
-		cors.WithMaxAge(5),
+		cors.WithMaxAge(5*time.Minute),
 	)
 
 	assert.Equal(t, urls, op.Urls)
@@ -75,5 +76,5 @@ func TestCorsOptionsCustomSettings(t *testing.T) {
 	assert.True(t, op.AllowCredentials)
 	assert.False(t, op.OriginFunc("nope"))
 	assert.True(t, op.OriginFunc("ok"))
-	assert.Equal(t, 5, op.MaxAge)
+	assert.Equal(t, 5*time.Minute, op.MaxAge)
 }

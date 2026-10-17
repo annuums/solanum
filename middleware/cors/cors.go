@@ -3,6 +3,7 @@ package cors
 import (
 	"errors"
 	"slices"
+	"time"
 )
 
 // AllowAllOrigins is the wildcard origin that permits every origin.
@@ -37,8 +38,8 @@ type Option struct {
 	// OriginFunc custom function to validate origin
 	OriginFunc func(origin string) bool
 
-	// MaxAge preflight cache duration in hours
-	MaxAge int
+	// MaxAge preflight cache duration (zero leaves the browser default)
+	MaxAge time.Duration
 }
 
 // WithUrls sets the allowed origin URLs for CORS.
@@ -81,8 +82,8 @@ func WithOriginFunc(originFunc func(origin string) bool) func(*Option) {
 	}
 }
 
-// WithMaxAge sets the maximum age (in hours) for CORS preflight requests to be cached.
-func WithMaxAge(maxAge int) func(*Option) {
+// WithMaxAge sets how long CORS preflight responses may be cached (e.g. 12 * time.Hour).
+func WithMaxAge(maxAge time.Duration) func(*Option) {
 
 	return func(s *Option) {
 		s.MaxAge = maxAge
