@@ -110,10 +110,14 @@ func (m *SolaModule) AddControllers(c ...Controller) {
 
 // SetRoutes registers the module's routes and middleware on the given RouterGroup.
 // The final handler chain per route is: module pre-middlewares → service PreHandlers → handler → service PostHandlers → module post-middlewares.
+// It panics when a service is nil, has no Handler, or has no Method.
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
-
 	for _, c := range m.controllers {
 		for _, svc := range c.Handlers() {
+			if err := m.validateService(svc); err != nil {
+
+				panic(err.Error())
+			}
 
 			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+len(svc.PreHandlers)+1+len(svc.PostHandlers)+len(m.postMiddlewares))
 			chain = append(chain, m.preMiddlewares...)
@@ -124,6 +128,26 @@ func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
 			router.Handle(svc.Method, svc.Uri, chain...)
 		}
 	}
+}
+
+// validateService reports why a service cannot be registered as a route.
+func (m *SolaModule) validateService(svc *SolaService) error {
+	if svc == nil {
+
+		return fmt.Errorf("solanum: module %q has a nil SolaService", m.uri)
+	}
+
+	if svc.Method == "" {
+
+		return fmt.Errorf("solanum: SolaService %q in module %q has no Method", svc.Uri, m.uri)
+	}
+
+	if svc.Handler == nil {
+
+		return fmt.Errorf("solanum: SolaService %s %q in module %q has no Handler", svc.Method, svc.Uri, m.uri)
+	}
+
+	return nil
 }
 
 // Uri returns the base URI prefix for this module.

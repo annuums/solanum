@@ -135,3 +135,24 @@ func TestWithUriValidation(t *testing.T) {
 	opts := []solanum.ModuleOption{solanum.WithUri("/users")}
 	assert.Equal(t, "/users", solanum.NewModule(opts...).Uri())
 }
+
+// TestSetRoutesValidatesServices rejects services that would register broken routes.
+func TestSetRoutesValidatesServices(t *testing.T) {
+
+	cases := map[string]*solanum.SolaService{
+		"nil service": nil,
+		"no handler":  {Uri: "/x", Method: http.MethodGet},
+		"no method":   {Uri: "/x", Handler: func(c *gin.Context) {}},
+	}
+
+	for name, svc := range cases {
+		t.Run(name, func(t *testing.T) {
+
+			m := solanum.NewModule(solanum.WithUri("/api"))
+			ctrl := solanum.NewController()
+			ctrl.SetHandlers(svc)
+			m.AddControllers(ctrl)
+			assert.Panics(t, func() { m.SetRoutes(gin.New().Group("/api")) })
+		})
+	}
+}
