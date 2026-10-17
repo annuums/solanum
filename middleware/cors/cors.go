@@ -1,6 +1,9 @@
 package cors
 
-import "errors"
+import (
+	"errors"
+	"slices"
+)
 
 // AllowAllOrigins is the wildcard origin that permits every origin.
 const AllowAllOrigins = "*"
@@ -9,15 +12,12 @@ const AllowAllOrigins = "*"
 var (
 	DefaultMethods = []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"}
 	DefaultHeaders = []string{
-		"Access-Control-Allow-Headers",
 		"Origin",
 		"Accept",
+		"Authorization",
 		"X-Requested-With",
 		"Content-Type",
-		"Access-Control-Request-Method",
-		"Access-Control-Request-Headers",
 	}
-	DefaultCredentials = false
 )
 
 // Option defines configuration settings for Cross-Origin Resource Sharing (CORS).
@@ -104,13 +104,13 @@ func Options(opts ...func(*Option)) *Option {
 	// Use default headers if none specified
 	if len(options.Headers) == 0 {
 
-		options.Headers = DefaultHeaders
+		options.Headers = slices.Clone(DefaultHeaders)
 	}
 
 	// Use default methods if none specified
 	if len(options.Methods) == 0 {
 
-		options.Methods = DefaultMethods
+		options.Methods = slices.Clone(DefaultMethods)
 	}
 
 	// Allow all origins only when neither urls nor originFunc is configured

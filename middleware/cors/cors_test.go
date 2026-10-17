@@ -13,6 +13,14 @@ func TestCorsOptionsDefaultValues(t *testing.T) {
 
 	assert.Equal(t, cors.DefaultHeaders, op.Headers)
 	assert.Equal(t, cors.DefaultMethods, op.Methods)
+	assert.Contains(t, op.Headers, "Authorization")
+	assert.NotContains(t, op.Headers, "Access-Control-Allow-Headers")
+
+	// Mutating the returned options must not leak into the package defaults
+	op.Headers[0] = "X-Mutated"
+	op.Methods[0] = "X-Mutated"
+	assert.NotEqual(t, "X-Mutated", cors.DefaultHeaders[0])
+	assert.NotEqual(t, "X-Mutated", cors.DefaultMethods[0])
 
 	// All origins are allowed with the wildcard (not by reflecting the origin) when no URLs set
 	assert.Nil(t, op.OriginFunc)
