@@ -87,15 +87,19 @@ Each module:
 ### 2. Controller-Centered Routing
 ```go
 type SolaService struct {
-    Uri     string
-    Method  string
-    Handler gin.HandlerFunc
+    Uri          string            // relative to the module prefix
+    Method       string            // GET, POST, ...
+    PreHandlers  []gin.HandlerFunc // route-only middleware before Handler
+    Handler      gin.HandlerFunc
+    PostHandlers []gin.HandlerFunc // route-only middleware after Handler
 }
 ```
 Controllers define:
 - HTTP method
 - Relative URI
-- Handler function
+- Handler function (plus optional per-route pre/post handlers)
+
+A service without `Method` or `Handler` panics at startup instead of silently registering a broken route.
 
 No reflection-based routing, no annotations — just plain Go structures.
 
@@ -119,7 +123,27 @@ module.AddPreMiddleware(rateLimiter)
 module.AddPostMiddleware(metricsCollector)
 ```
 
-The final handler chain for each route is: **pre-middlewares → handler → post-middlewares**.
+The final handler chain for each route is:
+
+**module pre-middlewares → service PreHandlers → handler → service PostHandlers → module post-middlewares**
+
+Post handlers run **even when an earlier handler calls `c.Abort*()`** (use `c.IsAborted()` to tell),
+which makes them a good fit for logging and metrics. By then the response is usually already written,
+so they cannot change the status code or headers.
+
+`Module` is a small interface (`Uri()` and `SetRoutes()`), so you can also plug in your own implementation:
+
+```go
+type healthModule struct{}
+
+func (healthModule) Uri() string { return "/health" }
+
+func (healthModule) SetRoutes(r *gin.RouterGroup) {
+    r.GET("", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+}
+
+server.AddModules(healthModule{})
+```
 
 
 ### 4. Application-Level CORS
@@ -130,10 +154,54 @@ server.Cors(
   cors.WithUrls([]string{"https://example.com"}),
   cors.WithMethods([]string{"GET", "POST"}),
   cors.WithAllowCredentials(true),
+  cors.WithMaxAge(12 * time.Hour),
 )
 ```
 CORS middleware is applied at the application level using functional options.
 Sensible defaults are provided for headers and methods when not specified.
+
+- Without `WithUrls` / `WithOriginFunc`, all origins are allowed with `Access-Control-Allow-Origin: *`
+  (the request origin is never echoed back).
+- `WithAllowCredentials(true)` requires an explicit origin list or origin func; combining it with all origins panics.
+- Call `Cors` before `Run` / `Handler`; calling it afterwards panics because existing routes would not be covered.
+
+### 5. Production-Ready Server
+```go
+server := solanum.NewSolanum(
+    solanum.WithPort(8080),
+    solanum.WithGinMode(gin.ReleaseMode),
+    solanum.WithMiddlewares(gin.Logger(), requestID),   // application-wide middlewares
+    solanum.WithRecovery(gin.CustomRecovery(onPanic)),   // gin.Recovery() by default
+    solanum.WithLogger(slog.Default()),                  // framework logs (nil silences them)
+    solanum.WithReadHeaderTimeout(5 * time.Second),
+    solanum.WithShutdownTimeout(15 * time.Second),
+)
+
+// Blocks until SIGINT/SIGTERM, then shuts down gracefully.
+if err := server.Run(); err != nil {
+    log.Fatal(err)
+}
+
+// Or control the lifecycle yourself:
+// err := server.RunContext(ctx)
+```
+
+| Option | Default |
+|---|---|
+| `WithReadHeaderTimeout` | 10s |
+| `WithReadTimeout` | 30s |
+| `WithWriteTimeout` | 0 (unlimited, for streaming) |
+| `WithIdleTimeout` | 120s |
+| `WithShutdownTimeout` | 10s |
+| `WithRecovery` | `gin.Recovery()` |
+
+### 6. Testing Without a Network
+`Handler()` registers the routes once and returns an `http.Handler`:
+
+```go
+rec := httptest.NewRecorder()
+server.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ping", nil))
+```
 
 ---
 
@@ -148,6 +216,7 @@ go get github.com/annuums/solanum
 package main
 
 import (
+  "log"
   "net/http"
 
   "github.com/annuums/solanum"
@@ -177,8 +246,10 @@ func main() {
     solanum.WithPort(5050),
   )
 
-  server.SetModules(pingModule)
-  server.Run()
+  server.AddModules(pingModule)
+  if err := server.Run(); err != nil {
+    log.Fatal(err)
+  }
 }
 ```
 
@@ -192,6 +263,20 @@ No hidden wiring. No surprises.
 
 ### Examples & More
 See the [Simple Example](./docs/examples/simple/README.md) for a minimal health-check server.
+
+## Migrating from earlier versions
+| Before | After |
+|---|---|
+| `server.Run()` panicked on failure | `Run() error` returns the error; it also shuts down gracefully on SIGINT/SIGTERM |
+| `SetModules` appended | `SetModules` replaces, `AddModules` appends |
+| `cors.WithMaxAge(12)` (hours) | `cors.WithMaxAge(12 * time.Hour)` |
+| `cors.DefaultCredentials` | removed (it was unused) |
+| CORS without urls echoed any origin | answers with `*`; credentials require explicit origins |
+| Post middlewares skipped on `Abort` | always run after the chain |
+| `NewSolanum` returned `Runner` | returns `*solanum.Server` (still implements `Runner`) |
+| `runner.Engine` field | `GinEngine()` |
+| `Module` / `Controller` interfaces exposed setters | interfaces hold only `Uri`/`SetRoutes` and `Handlers`; use `*SolaModule` / `*SolaController` for setters |
+| `InitGlobalMiddlewares()` | use `WithMiddlewares` / `WithRecovery` |
 
 ## Who Is This For?
 - Go developers who value explicit control flow

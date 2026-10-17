@@ -6,6 +6,7 @@ A minimal server that mounts a health-check endpoint using the built-in module.
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/annuums/solanum"
@@ -23,19 +24,23 @@ func main() {
 		&solanum.SolaService{
 			Uri:    "",
 			Method: http.MethodGet,
-			Handler: func(c *gin.Context) {
-				c.String(http.StatusOK, "pong")
+			Handler: func(ctx *gin.Context) {
+				ctx.String(http.StatusOK, "pong")
 			},
 		},
 	)
-	pingModule.SetControllers(ctrl)
+	pingModule.AddControllers(ctrl)
 
 	server := solanum.NewSolanum(
 		solanum.WithPort(5050),
+		solanum.WithMiddlewares(gin.Logger()),
 	)
 
-	server.SetModules(pingModule)
-	server.Run()
+	server.AddModules(pingModule)
+	if err := server.Run(); err != nil {
+
+		log.Fatal(err)
+	}
 }
 ```
 
@@ -46,3 +51,5 @@ go run main.go
 # then in another terminal:
 curl http://localhost:5050/ping
 ```
+
+Press `Ctrl+C` to stop: the server shuts down gracefully, letting in-flight requests finish.

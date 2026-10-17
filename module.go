@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,11 +16,17 @@ type SolaModule struct {
 	postMiddlewares []gin.HandlerFunc // middleware to run after each handler
 }
 
-type moduleOption func(*SolaModule) error
+// ModuleOption configures a SolaModule. NewModule panics when an option returns an error.
+type ModuleOption func(*SolaModule) error
 
-func WithUri(uri string) moduleOption {
+// WithUri sets the module's base URI prefix. It must be empty or start with '/'.
+func WithUri(uri string) ModuleOption {
 
 	return func(m *SolaModule) error {
+		if uri != "" && !strings.HasPrefix(uri, "/") {
+
+			return fmt.Errorf("uri %q must start with '/'", uri)
+		}
 
 		m.uri = uri
 		return nil
@@ -28,7 +35,7 @@ func WithUri(uri string) moduleOption {
 
 // NewModule creates a new SolaModule with the given URI prefix.
 // The module starts with empty controller and middleware lists.
-func NewModule(opts ...moduleOption) *SolaModule {
+func NewModule(opts ...ModuleOption) *SolaModule {
 
 	module := &SolaModule{
 		controllers:     []Controller{},
@@ -103,20 +110,69 @@ func (m *SolaModule) AddControllers(c ...Controller) {
 
 // SetRoutes registers the module's routes and middleware on the given RouterGroup.
 // The final handler chain per route is: module pre-middlewares → service PreHandlers → handler → service PostHandlers → module post-middlewares.
+// Post handlers run after the rest of the chain completes, even when it was aborted
+// (check c.IsAborted() to tell); they are skipped only when the chain panics.
+// It panics when a service is nil, has no Handler, or has no Method.
 func (m *SolaModule) SetRoutes(router *gin.RouterGroup) {
-
 	for _, c := range m.controllers {
 		for _, svc := range c.Handlers() {
+			if err := m.validateService(svc); err != nil {
 
-			chain := make([]gin.HandlerFunc, 0, len(m.preMiddlewares)+len(svc.PreHandlers)+1+len(svc.PostHandlers)+len(m.postMiddlewares))
+				panic(err.Error())
+			}
+
+			posts := make([]gin.HandlerFunc, 0, len(svc.PostHandlers)+len(m.postMiddlewares))
+			posts = append(posts, svc.PostHandlers...)
+			posts = append(posts, m.postMiddlewares...)
+
+			chain := make([]gin.HandlerFunc, 0, 1+len(m.preMiddlewares)+len(svc.PreHandlers)+1)
+			if len(posts) > 0 {
+
+				chain = append(chain, runAfter(posts))
+			}
+
 			chain = append(chain, m.preMiddlewares...)
 			chain = append(chain, svc.PreHandlers...)
 			chain = append(chain, svc.Handler)
-			chain = append(chain, svc.PostHandlers...)
-			chain = append(chain, m.postMiddlewares...)
 			router.Handle(svc.Method, svc.Uri, chain...)
 		}
 	}
+}
+
+// runAfter returns a handler that runs the rest of the chain first and then the given
+// post handlers, so they execute even when a pre-handler or the handler aborts.
+func runAfter(posts []gin.HandlerFunc) gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+
+		c.Next()
+		for _, post := range posts {
+			if post != nil {
+
+				post(c)
+			}
+		}
+	}
+}
+
+// validateService reports why a service cannot be registered as a route.
+func (m *SolaModule) validateService(svc *SolaService) error {
+	if svc == nil {
+
+		return fmt.Errorf("solanum: module %q has a nil SolaService", m.uri)
+	}
+
+	if svc.Method == "" {
+
+		return fmt.Errorf("solanum: SolaService %q in module %q has no Method", svc.Uri, m.uri)
+	}
+
+	if svc.Handler == nil {
+
+		return fmt.Errorf("solanum: SolaService %s %q in module %q has no Handler", svc.Method, svc.Uri, m.uri)
+	}
+
+	return nil
 }
 
 // Uri returns the base URI prefix for this module.

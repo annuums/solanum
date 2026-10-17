@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/annuums/solanum"
@@ -27,8 +28,12 @@ func main() {
 
 	server := solanum.NewSolanum(
 		solanum.WithPort(5050),
+		solanum.WithMiddlewares(gin.Logger()),
 	)
 
-	server.SetModules(pingModule)
-	server.Run()
+	server.AddModules(pingModule)
+	if err := server.Run(); err != nil {
+
+		log.Fatal(err)
+	}
 }

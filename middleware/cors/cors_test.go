@@ -2,6 +2,7 @@ package cors_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/annuums/solanum/middleware/cors"
 	"github.com/stretchr/testify/assert"
@@ -13,9 +14,45 @@ func TestCorsOptionsDefaultValues(t *testing.T) {
 
 	assert.Equal(t, cors.DefaultHeaders, op.Headers)
 	assert.Equal(t, cors.DefaultMethods, op.Methods)
+	assert.Contains(t, op.Headers, "Authorization")
+	assert.NotContains(t, op.Headers, "Access-Control-Allow-Headers")
 
-	// OriginFunc should allow all when no URLs set
-	assert.True(t, op.OriginFunc("https://random.com"))
+	// Mutating the returned options must not leak into the package defaults
+	op.Headers[0] = "X-Mutated"
+	op.Methods[0] = "X-Mutated"
+	assert.NotEqual(t, "X-Mutated", cors.DefaultHeaders[0])
+	assert.NotEqual(t, "X-Mutated", cors.DefaultMethods[0])
+
+	// All origins are allowed with the wildcard (not by reflecting the origin) when no URLs set
+	assert.Nil(t, op.OriginFunc)
+	assert.Equal(t, []string{cors.AllowAllOrigins}, op.Urls)
+	assert.True(t, op.AllowsAllOrigins())
+	assert.NoError(t, op.Validate())
+}
+
+// TestCorsOptionsOriginFuncOnly keeps urls empty when only originFunc is configured.
+func TestCorsOptionsOriginFuncOnly(t *testing.T) {
+
+	op := cors.Options(
+		cors.WithOriginFunc(func(origin string) bool { return origin == "https://ok.com" }),
+	)
+
+	assert.Empty(t, op.Urls)
+	assert.False(t, op.AllowsAllOrigins())
+}
+
+// TestCorsOptionsValidateCredentials rejects credentials combined with all origins.
+func TestCorsOptionsValidateCredentials(t *testing.T) {
+
+	assert.Error(t, cors.Options(cors.WithAllowCredentials(true)).Validate())
+	assert.Error(t, cors.Options(
+		cors.WithUrls([]string{"https://a.com", "*"}),
+		cors.WithAllowCredentials(true),
+	).Validate())
+	assert.NoError(t, cors.Options(
+		cors.WithUrls([]string{"https://a.com"}),
+		cors.WithAllowCredentials(true),
+	).Validate())
 }
 
 // TestCorsOptionsCustomSettings verifies each functional option overrides defaults.
@@ -30,7 +67,7 @@ func TestCorsOptionsCustomSettings(t *testing.T) {
 		cors.WithMethods(methods),
 		cors.WithAllowCredentials(true),
 		cors.WithOriginFunc(func(origin string) bool { return origin == "ok" }),
-		cors.WithMaxAge(5),
+		cors.WithMaxAge(5*time.Minute),
 	)
 
 	assert.Equal(t, urls, op.Urls)
@@ -39,5 +76,5 @@ func TestCorsOptionsCustomSettings(t *testing.T) {
 	assert.True(t, op.AllowCredentials)
 	assert.False(t, op.OriginFunc("nope"))
 	assert.True(t, op.OriginFunc("ok"))
-	assert.Equal(t, 5, op.MaxAge)
+	assert.Equal(t, 5*time.Minute, op.MaxAge)
 }

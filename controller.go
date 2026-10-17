@@ -23,8 +23,9 @@ type SolaService struct {
 	Handler gin.HandlerFunc
 
 	// PostHandlers are middleware functions to run after Handler for this route only.
-	// Gin executes all handlers in the chain sequentially; ctx.Next() is not required.
-	// Use ctx.Abort() in any handler to stop further execution.
+	// They run even when a pre-handler or Handler calls ctx.Abort*() (check ctx.IsAborted()),
+	// so they suit logging and metrics. The response may already be written by then,
+	// so changing the status code or headers here has no effect.
 	PostHandlers []gin.HandlerFunc
 }
 
