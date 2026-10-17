@@ -1,6 +1,7 @@
 package solanum
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/annuums/solanum/middleware/cors"
@@ -85,6 +86,10 @@ type (
 		Cors(opts ...func(*cors.Option))
 
 		// Run boots the HTTP server, initializing modules and listening on the configured port.
-		Run()
+		// It shuts down gracefully on SIGINT/SIGTERM and returns an error when serving fails.
+		Run() error
+
+		// RunContext is like Run but shuts down gracefully when ctx is done.
+		RunContext(ctx context.Context) error
 	}
 )

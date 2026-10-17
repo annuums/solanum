@@ -2,8 +2,11 @@ package solanum_test
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -242,4 +245,75 @@ func TestConfigurationAfterInitPanics(t *testing.T) {
 
 	assert.Panics(t, func() { server.Cors() })
 	assert.Panics(t, func() { server.SetModules(solanum.NewModule()) })
+}
+
+// freePort returns a TCP port that is currently free on localhost.
+func freePort(t *testing.T) int {
+
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	assert.NoError(t, err)
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
+}
+
+// TestRunWithoutPortReturnsError verifies Run reports a missing port instead of panicking.
+func TestRunWithoutPortReturnsError(t *testing.T) {
+
+	server := solanum.NewSolanum()
+	assert.ErrorIs(t, server.RunContext(context.Background()), solanum.ErrPortNotConfigured)
+}
+
+// TestRunContextGracefulShutdown serves requests and returns nil once the context is cancelled.
+func TestRunContextGracefulShutdown(t *testing.T) {
+
+	port := freePort(t)
+	m := solanum.NewModule(solanum.WithUri("/api"))
+	ctrl := solanum.NewController()
+	ctrl.SetHandlers(&solanum.SolaService{
+		Uri:     "/ping",
+		Method:  http.MethodGet,
+		Handler: func(c *gin.Context) { c.String(http.StatusOK, "pong") },
+	})
+	m.AddControllers(ctrl)
+	server := solanum.NewSolanum(solanum.WithPort(port), solanum.WithLogger(nil))
+	server.SetModules(m)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- server.RunContext(ctx) }()
+
+	url := fmt.Sprintf("http://127.0.0.1:%d/api/ping", port)
+	assert.Eventually(t, func() bool {
+		res, err := http.Get(url)
+		if err != nil {
+
+			return false
+		}
+
+		defer res.Body.Close()
+		return res.StatusCode == http.StatusOK
+	}, 2*time.Second, 20*time.Millisecond)
+
+	cancel()
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("server did not shut down")
+	}
+}
+
+// TestRunContextPortInUseReturnsError verifies listen failures are returned as errors.
+func TestRunContextPortInUseReturnsError(t *testing.T) {
+
+	l, err := net.Listen("tcp", ":0")
+	assert.NoError(t, err)
+	defer l.Close()
+
+	server := solanum.NewSolanum(
+		solanum.WithPort(l.Addr().(*net.TCPAddr).Port),
+		solanum.WithLogger(nil),
+	)
+	assert.Error(t, server.RunContext(context.Background()))
 }

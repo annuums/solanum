@@ -1,10 +1,16 @@
 package solanum
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 
 	cors2 "github.com/annuums/solanum/middleware/cors"
 
@@ -24,23 +30,78 @@ type Server struct {
 	logger      *slog.Logger      // framework logger
 	initOnce    sync.Once         // guards module route registration
 	initialized bool              // true once module routes are registered
+
+	readHeaderTimeout time.Duration // http.Server.ReadHeaderTimeout
+	readTimeout       time.Duration // http.Server.ReadTimeout
+	writeTimeout      time.Duration // http.Server.WriteTimeout
+	idleTimeout       time.Duration // http.Server.IdleTimeout
+	shutdownTimeout   time.Duration // grace period for in-flight requests on shutdown
 }
 
-// Run initializes all modules and starts the Gin HTTP server on the configured port.
-func (server *Server) Run() {
+// Default http.Server timeouts applied by NewSolanum.
+// WriteTimeout is unlimited by default so streaming responses (SSE, downloads) keep working.
+const (
+	DefaultReadHeaderTimeout = 10 * time.Second
+	DefaultReadTimeout       = 30 * time.Second
+	DefaultWriteTimeout      = 0
+	DefaultIdleTimeout       = 120 * time.Second
+	DefaultShutdownTimeout   = 10 * time.Second
+)
+
+// ErrPortNotConfigured is returned by Run when no valid port is set.
+var ErrPortNotConfigured = errors.New("solanum: server port is not configured; use WithPort")
+
+// Run initializes all modules and serves HTTP on the configured port until
+// SIGINT or SIGTERM is received, then shuts down gracefully.
+func (server *Server) Run() error {
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return server.RunContext(ctx)
+}
+
+// RunContext initializes all modules and serves HTTP on the configured port until ctx is done,
+// then shuts down gracefully within the shutdown timeout.
+// It returns nil after a graceful shutdown and an error when the server fails to start or stop.
+func (server *Server) RunContext(ctx context.Context) error {
 	if server.port <= 0 {
 
-		panic("Server port is not configured. Please set a port before running.")
+		return ErrPortNotConfigured
 	}
 
-	server.InitModules()
 	addr := fmt.Sprintf(":%d", server.port)
-
-	server.logger.Info("solanum is running", "addr", addr)
-	if err := server.engine.Run(addr); err != nil {
-
-		panic("fail to run server on addr :: " + addr + " :: " + err.Error())
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           server.Handler(),
+		ReadHeaderTimeout: server.readHeaderTimeout,
+		ReadTimeout:       server.readTimeout,
+		WriteTimeout:      server.writeTimeout,
+		IdleTimeout:       server.idleTimeout,
 	}
+
+	errCh := make(chan error, 1)
+	go func() {
+
+		server.logger.Info("solanum is running", "addr", addr)
+		errCh <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err := <-errCh:
+		return fmt.Errorf("solanum: failed to run server on %s: %w", addr, err)
+	case <-ctx.Done():
+	}
+
+	server.logger.Info("solanum is shutting down", "addr", addr)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), server.shutdownTimeout)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+
+		return fmt.Errorf("solanum: failed to shut down server on %s: %w", addr, err)
+	}
+
+	return nil
 }
 
 // InitModules sets up routing groups for each Module and applies their routes.
@@ -181,6 +242,41 @@ func WithMiddlewares(middlewares ...gin.HandlerFunc) Option {
 	}
 }
 
+// WithReadHeaderTimeout sets http.Server.ReadHeaderTimeout (zero means no timeout).
+func WithReadHeaderTimeout(d time.Duration) Option {
+	return func(r *Server) {
+		r.readHeaderTimeout = d
+	}
+}
+
+// WithReadTimeout sets http.Server.ReadTimeout (zero means no timeout).
+func WithReadTimeout(d time.Duration) Option {
+	return func(r *Server) {
+		r.readTimeout = d
+	}
+}
+
+// WithWriteTimeout sets http.Server.WriteTimeout (zero means no timeout).
+func WithWriteTimeout(d time.Duration) Option {
+	return func(r *Server) {
+		r.writeTimeout = d
+	}
+}
+
+// WithIdleTimeout sets http.Server.IdleTimeout (zero falls back to the read timeout).
+func WithIdleTimeout(d time.Duration) Option {
+	return func(r *Server) {
+		r.idleTimeout = d
+	}
+}
+
+// WithShutdownTimeout sets how long graceful shutdown waits for in-flight requests.
+func WithShutdownTimeout(d time.Duration) Option {
+	return func(r *Server) {
+		r.shutdownTimeout = d
+	}
+}
+
 // WithLogger sets the logger used by the framework itself (defaults to slog.Default()).
 // Passing nil silences framework logs.
 func WithLogger(logger *slog.Logger) Option {
@@ -202,6 +298,12 @@ func NewSolanum(opts ...Option) *Server {
 		port:     0,
 		recovery: gin.Recovery(),
 		logger:   slog.Default(),
+
+		readHeaderTimeout: DefaultReadHeaderTimeout,
+		readTimeout:       DefaultReadTimeout,
+		writeTimeout:      DefaultWriteTimeout,
+		idleTimeout:       DefaultIdleTimeout,
+		shutdownTimeout:   DefaultShutdownTimeout,
 	}
 
 	for _, opt := range opts {
