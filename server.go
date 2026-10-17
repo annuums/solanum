@@ -3,6 +3,8 @@ package solanum
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
+	"sync"
 
 	cors2 "github.com/annuums/solanum/middleware/cors"
 
@@ -20,6 +22,8 @@ type Server struct {
 	recovery    gin.HandlerFunc   // panic recovery middleware (nil disables it)
 	middlewares []gin.HandlerFunc // application-wide middlewares
 	logger      *slog.Logger      // framework logger
+	initOnce    sync.Once         // guards module route registration
+	initialized bool              // true once module routes are registered
 }
 
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
@@ -40,21 +44,46 @@ func (server *Server) Run() {
 }
 
 // InitModules sets up routing groups for each Module and applies their routes.
+// It is idempotent: routes are registered only on the first call.
 func (server *Server) InitModules() {
 
-	server.logger.Debug("initializing modules", "count", len(server.modules))
-	for _, m := range server.modules {
+	server.initOnce.Do(func() {
 
-		m.SetRoutes(
-			server.GinEngine().Group(
-				m.Uri(),
-			),
-		)
+		server.logger.Debug("initializing modules", "count", len(server.modules))
+		for _, m := range server.modules {
+
+			m.SetRoutes(
+				server.GinEngine().Group(
+					m.Uri(),
+				),
+			)
+		}
+
+		server.initialized = true
+	})
+}
+
+// Handler initializes module routes (once) and returns the server as an http.Handler.
+// Useful for tests with httptest or for embedding into a custom http.Server.
+func (server *Server) Handler() http.Handler {
+
+	server.InitModules()
+	return server.engine
+}
+
+// mustNotBeInitialized panics when called after module routes are registered,
+// since later changes would silently not apply to existing routes.
+func (server *Server) mustNotBeInitialized(action string) {
+	if server.initialized {
+
+		panic(fmt.Sprintf("solanum: %s must be called before routes are initialized (Run, Handler, InitModules)", action))
 	}
 }
 
 // SetModules registers one or more Module implementations with the Runner.
 func (server *Server) SetModules(m ...Module) {
+
+	server.mustNotBeInitialized("SetModules")
 	server.modules = append(server.modules, m...)
 }
 
@@ -77,9 +106,11 @@ func (server *Server) InitGlobalMiddlewares() {
 
 // Cors applies configured CORS settings to the Gin engine using the cors middleware.
 // Accepts functional options for customizing allowed origins, methods, headers, etc.
-// It panics when the options are insecure (e.g. credentials with all origins).
+// It panics when the options are insecure (e.g. credentials with all origins)
+// or when called after routes are initialized.
 func (server *Server) Cors(opts ...func(*cors2.Option)) {
 
+	server.mustNotBeInitialized("Cors")
 	options := cors2.Options(opts...)
 	if err := options.Validate(); err != nil {
 

@@ -211,3 +211,35 @@ func TestWithLoggerReceivesFrameworkLogs(t *testing.T) {
 		solanum.NewSolanum(solanum.WithLogger(nil)).Cors()
 	})
 }
+
+// TestInitModulesIsIdempotent verifies repeated initialization does not re-register routes.
+func TestInitModulesIsIdempotent(t *testing.T) {
+
+	server := newPingServer()
+	assert.NotPanics(t, func() {
+		server.InitModules()
+		server.InitModules()
+		server.Handler()
+	})
+}
+
+// TestHandlerServesRoutes verifies Handler initializes routes and serves requests.
+func TestHandlerServesRoutes(t *testing.T) {
+
+	server := newPingServer()
+	rec := httptest.NewRecorder()
+	server.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/ping", nil))
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "pong", rec.Body.String())
+}
+
+// TestConfigurationAfterInitPanics verifies late configuration fails loudly instead of being ignored.
+func TestConfigurationAfterInitPanics(t *testing.T) {
+
+	server := newPingServer()
+	server.InitModules()
+
+	assert.Panics(t, func() { server.Cors() })
+	assert.Panics(t, func() { server.SetModules(solanum.NewModule()) })
+}

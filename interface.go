@@ -1,6 +1,8 @@
 package solanum
 
 import (
+	"net/http"
+
 	"github.com/annuums/solanum/middleware/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -56,8 +58,11 @@ type (
 	// Runner is the application entrypoint interface for Solanum.
 	// It manages module initialization, global middlewares, CORS, and server start.
 	Runner interface {
-		// InitModules sets up all registered modules and their routes.
+		// InitModules sets up all registered modules and their routes (idempotent).
 		InitModules()
+
+		// Handler initializes module routes (once) and returns an http.Handler for tests or custom servers.
+		Handler() http.Handler
 
 		// InitGlobalMiddlewares registers any application-wide middleware.
 		InitGlobalMiddlewares()
@@ -75,7 +80,8 @@ type (
 		Port() int
 
 		// Cors applies CORS configuration to the Gin engine using functional options.
-		// It panics when the options are insecure (e.g. credentials with all origins).
+		// It panics when the options are insecure (e.g. credentials with all origins)
+		// or when called after routes are initialized.
 		Cors(opts ...func(*cors.Option))
 
 		// Run boots the HTTP server, initializing modules and listening on the configured port.
