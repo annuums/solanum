@@ -245,6 +245,7 @@ func TestConfigurationAfterInitPanics(t *testing.T) {
 
 	assert.Panics(t, func() { server.Cors() })
 	assert.Panics(t, func() { server.SetModules(solanum.NewModule()) })
+	assert.Panics(t, func() { server.AddModules(solanum.NewModule()) })
 }
 
 // freePort returns a TCP port that is currently free on localhost.
@@ -316,4 +317,16 @@ func TestRunContextPortInUseReturnsError(t *testing.T) {
 		solanum.WithLogger(nil),
 	)
 	assert.Error(t, server.RunContext(context.Background()))
+}
+
+// TestSetModulesReplacesAndAddModulesAppends verifies Set/Add semantics match Module and Controller.
+func TestSetModulesReplacesAndAddModulesAppends(t *testing.T) {
+
+	server := solanum.NewSolanum()
+	server.SetModules(solanum.NewModule(), solanum.NewModule())
+	server.SetModules(solanum.NewModule())
+	assert.Len(t, server.Modules(), 1)
+
+	server.AddModules(solanum.NewModule(), solanum.NewModule())
+	assert.Len(t, server.Modules(), 3)
 }

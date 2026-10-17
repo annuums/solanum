@@ -141,10 +141,17 @@ func (server *Server) mustNotBeInitialized(action string) {
 	}
 }
 
-// SetModules registers one or more Module implementations with the Runner.
+// SetModules replaces all registered Module implementations with the provided list.
 func (server *Server) SetModules(m ...Module) {
 
 	server.mustNotBeInitialized("SetModules")
+	server.modules = m
+}
+
+// AddModules appends one or more Module implementations to the Runner.
+func (server *Server) AddModules(m ...Module) {
+
+	server.mustNotBeInitialized("AddModules")
 	server.modules = append(server.modules, m...)
 }
 

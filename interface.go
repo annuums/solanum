@@ -71,8 +71,11 @@ type (
 		// Modules returns a slice of pointers to registered Modules.
 		Modules() []Module
 
-		// SetModules registers one or more Modules with the Runner.
+		// SetModules replaces all registered Modules with the provided list.
 		SetModules(m ...Module)
+
+		// AddModules appends one or more Modules to the Runner.
+		AddModules(m ...Module)
 
 		// GinEngine exposes the underlying *gin.Engine for custom setup.
 		GinEngine() *gin.Engine
