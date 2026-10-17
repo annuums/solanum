@@ -10,9 +10,7 @@ import (
 var (
 	_ solanum.Module     = (*solanum.SolaModule)(nil)
 	_ solanum.Controller = (*solanum.SolaController)(nil)
-	_ solanum.Runner     = solanum.NewSolanum(
-		solanum.WithPort(5050),
-	)
+	_ solanum.Runner     = (*solanum.Server)(nil)
 )
 
 // TestInterfaceCompliance passes if the code compiles successfully.

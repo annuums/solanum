@@ -9,16 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// runner implements the Runner interface and drives the application startup.
+// Server implements the Runner interface and drives the application startup.
 // It holds the Gin engine, listening port, and registered modules.
-type runner struct {
-	Engine  *gin.Engine // underlying Gin engine
+type Server struct {
+	engine  *gin.Engine // underlying Gin engine
 	port    int         // TCP port to listen on
 	modules []Module    // registered modules
 }
 
 // Run initializes all modules and starts the Gin HTTP server on the configured port.
-func (server *runner) Run() {
+func (server *Server) Run() {
 	if server.port <= 0 {
 
 		panic("Server port is not configured. Please set a port before running.")
@@ -28,14 +28,14 @@ func (server *runner) Run() {
 	addr := fmt.Sprintf(":%d", server.port)
 
 	fmt.Printf("Solanum is running on %s\n", addr)
-	if err := server.Engine.Run(addr); err != nil {
+	if err := server.engine.Run(addr); err != nil {
 
 		panic("fail to run server on addr :: " + addr + " :: " + err.Error())
 	}
 }
 
 // InitModules sets up routing groups for each Module and applies their routes.
-func (server *runner) InitModules() {
+func (server *Server) InitModules() {
 
 	fmt.Printf("Initialize Modules...\n")
 	for _, m := range server.modules {
@@ -49,19 +49,19 @@ func (server *runner) InitModules() {
 }
 
 // SetModules registers one or more Module implementations with the Runner.
-func (server *runner) SetModules(m ...Module) {
+func (server *Server) SetModules(m ...Module) {
 	server.modules = append(server.modules, m...)
 }
 
 // Modules returns the slice of all registered Module pointers.
-func (server *runner) Modules() []Module {
+func (server *Server) Modules() []Module {
 
 	return server.modules
 }
 
 // InitGlobalMiddlewares is a placeholder for registering application-wide middlewares
 // such as logging, authentication, and authorization. Implement as needed.
-func (server *runner) InitGlobalMiddlewares() {
+func (server *Server) InitGlobalMiddlewares() {
 	//* 1. Logger, ...
 
 	//* 2. Authentication, ...
@@ -72,7 +72,7 @@ func (server *runner) InitGlobalMiddlewares() {
 // Cors applies configured CORS settings to the Gin engine using the cors middleware.
 // Accepts functional options for customizing allowed origins, methods, headers, etc.
 // It panics when the options are insecure (e.g. credentials with all origins).
-func (server *runner) Cors(opts ...func(*cors2.Option)) {
+func (server *Server) Cors(opts ...func(*cors2.Option)) {
 
 	options := cors2.Options(opts...)
 	if err := options.Validate(); err != nil {
@@ -80,7 +80,7 @@ func (server *runner) Cors(opts ...func(*cors2.Option)) {
 		panic(err.Error())
 	}
 
-	server.Engine.Use(
+	server.engine.Use(
 		cors.New(
 			cors.Config{
 				AllowOrigins:     options.Urls,
@@ -95,29 +95,31 @@ func (server *runner) Cors(opts ...func(*cors2.Option)) {
 }
 
 // GinEngine returns the underlying *gin.Engine for direct access and customization.
-func (server *runner) GinEngine() *gin.Engine {
+func (server *Server) GinEngine() *gin.Engine {
 
-	return server.Engine
+	return server.engine
 }
 
 // Port returns the configured port for the HTTP server.
-func (server *runner) Port() int {
+func (server *Server) Port() int {
 	return server.port
 }
 
-type Option func(*runner)
+// Option configures a Server.
+type Option func(*Server)
 
+// WithPort sets the TCP port the server listens on.
 func WithPort(port int) Option {
-	return func(r *runner) {
+	return func(r *Server) {
 		r.port = port
 	}
 }
 
-// NewSolanum creates and returns a new Runner configured with the given options.
-func NewSolanum(opts ...Option) Runner {
+// NewSolanum creates and returns a new Server configured with the given options.
+func NewSolanum(opts ...Option) *Server {
 
-	s := &runner{
-		Engine: gin.New(),
+	s := &Server{
+		engine: gin.New(),
 		port:   0,
 	}
 
