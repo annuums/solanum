@@ -2,6 +2,7 @@ package solanum
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,11 +16,17 @@ type SolaModule struct {
 	postMiddlewares []gin.HandlerFunc // middleware to run after each handler
 }
 
-type moduleOption func(*SolaModule) error
+// ModuleOption configures a SolaModule. NewModule panics when an option returns an error.
+type ModuleOption func(*SolaModule) error
 
-func WithUri(uri string) moduleOption {
+// WithUri sets the module's base URI prefix. It must be empty or start with '/'.
+func WithUri(uri string) ModuleOption {
 
 	return func(m *SolaModule) error {
+		if uri != "" && !strings.HasPrefix(uri, "/") {
+
+			return fmt.Errorf("uri %q must start with '/'", uri)
+		}
 
 		m.uri = uri
 		return nil
@@ -28,7 +35,7 @@ func WithUri(uri string) moduleOption {
 
 // NewModule creates a new SolaModule with the given URI prefix.
 // The module starts with empty controller and middleware lists.
-func NewModule(opts ...moduleOption) *SolaModule {
+func NewModule(opts ...ModuleOption) *SolaModule {
 
 	module := &SolaModule{
 		controllers:     []Controller{},

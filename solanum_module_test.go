@@ -125,3 +125,13 @@ func TestSetRoutes(t *testing.T) {
 	r.ServeHTTP(rec, req)
 	assert.Equal(t, "ok", rec.Body.String())
 }
+
+// TestWithUriValidation rejects module prefixes that do not start with '/'.
+func TestWithUriValidation(t *testing.T) {
+
+	assert.Panics(t, func() { solanum.NewModule(solanum.WithUri("users")) })
+	assert.NotPanics(t, func() { solanum.NewModule(solanum.WithUri("")) })
+
+	opts := []solanum.ModuleOption{solanum.WithUri("/users")}
+	assert.Equal(t, "/users", solanum.NewModule(opts...).Uri())
+}
